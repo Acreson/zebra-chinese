@@ -264,7 +264,7 @@
         ZBRepoManager *repoManager = [[ZBRepoManager alloc] init];
         NSString *sourceURL = url.absoluteString;
         
-        UIAlertController *wait = [UIAlertController alertControllerWithTitle:@"Please Wait..." message:@"Verifying Source" preferredStyle:UIAlertControllerStyleAlert];
+        UIAlertController *wait = [UIAlertController alertControllerWithTitle:@"请稍等..." message:@"验证软件源安全中..." preferredStyle:UIAlertControllerStyleAlert];
         [self presentViewController:wait animated:true completion:nil];
         
         [repoManager addSourceWithString:sourceURL response:^(BOOL success, NSString *error, NSURL *url) {
@@ -294,9 +294,9 @@
 
 - (void)presentVerificationFailedAlert:(NSString *)message url:(NSURL *)url present:(BOOL)present {
     dispatch_async(dispatch_get_main_queue(), ^{
-        UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"Unable to verify Repo" message:message preferredStyle:UIAlertControllerStyleAlert];
+        UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"无法验证软件源" message:message preferredStyle:UIAlertControllerStyleAlert];
         alertController.view.tintColor = [UIColor tintColor];
-        UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"Ok" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+        UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"好的" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
             if (present) {
                 [self showAddRepoAlert:url];
             }
@@ -307,7 +307,7 @@
 }
 
 - (void)addReposWithText:(NSString *)text {
-    UIAlertController *wait = [UIAlertController alertControllerWithTitle:@"Please Wait..." message:@"Verifying Source(s)" preferredStyle:UIAlertControllerStyleAlert];
+    UIAlertController *wait = [UIAlertController alertControllerWithTitle:@"请稍等..." message:@"验证软件源安全中(s)" preferredStyle:UIAlertControllerStyleAlert];
     [self presentViewController:wait animated:true completion:nil];
     
     __weak typeof(self) weakSelf = self;
@@ -315,16 +315,16 @@
     [self.repoManager addSourcesFromString:text response:^(BOOL success, NSString * _Nonnull error, NSArray<NSURL *> * _Nonnull failedURLs) {
         [weakSelf dismissViewControllerAnimated:YES completion:^{
             if (!success) {
-                UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:@"Error" message:error preferredStyle:UIAlertControllerStyleAlert];
+                UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:@"错误" message:error preferredStyle:UIAlertControllerStyleAlert];
                 
                 if (failedURLs.count) {
-                    UIAlertAction *retryAction = [UIAlertAction actionWithTitle:@"Retry" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                    UIAlertAction *retryAction = [UIAlertAction actionWithTitle:@"重试" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
                         [weakSelf addReposWithText:text];
                     }];
                     
                     [errorAlert addAction:retryAction];
                     
-                    UIAlertAction *editAction = [UIAlertAction actionWithTitle:@"Edit" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                    UIAlertAction *editAction = [UIAlertAction actionWithTitle:@"修改" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
                         if ([failedURLs count] > 1) {
                             UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
                             ZBAddRepoViewController *addRepo = [storyboard instantiateViewControllerWithIdentifier:@"addSourcesController"];

@@ -241,10 +241,10 @@
     else if ([destination isEqual:@"repo"]) {
         UIAlertController *controller = [UIAlertController alertControllerWithTitle:@"添加源" message:[NSString stringWithFormat:@"您确定要添加这个源吗 \"%@\"?", action] preferredStyle:UIAlertControllerStyleAlert];
         
-        UIAlertAction *yes = [UIAlertAction actionWithTitle:@"Yes" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        UIAlertAction *yes = [UIAlertAction actionWithTitle:@"是" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
             [self handleRepoAdd:url local:false];
         }];
-        UIAlertAction *no = [UIAlertAction actionWithTitle:@"No" style:UIAlertActionStyleDefault handler:NULL];
+        UIAlertAction *no = [UIAlertAction actionWithTitle:@"否" style:UIAlertActionStyleDefault handler:NULL];
         
         [controller addAction:no];
         [controller addAction:yes];

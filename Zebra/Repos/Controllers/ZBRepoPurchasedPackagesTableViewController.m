@@ -40,7 +40,7 @@
         self.navigationItem.titleView = container;
     }
     self.title = self.repoName;
-    self.logOut = [[UIBarButtonItem alloc] initWithTitle:@"Log Out" style:UIBarButtonItemStylePlain actionHandler:^{
+    self.logOut = [[UIBarButtonItem alloc] initWithTitle:@"退出" style:UIBarButtonItemStylePlain actionHandler:^{
         [self logoutRepo];
     }];
     [self.navigationItem setRightBarButtonItem:self.logOut];

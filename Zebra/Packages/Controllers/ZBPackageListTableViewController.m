@@ -311,16 +311,16 @@ typedef enum {
         UILabel *label = [[UILabel alloc] initWithFrame:CGRectMake(10, 0, tableView.frame.size.width - 10, 18)];
         [label setFont:[UIFont boldSystemFontOfSize:15]];
         if (isUpdateSection) {
-            [label setText:[NSString stringWithFormat:@"Available Upgrades (%lu)", (unsigned long)updates.count]];
+            [label setText:[NSString stringWithFormat:@"可以更新 (%lu)", (unsigned long)updates.count]];
         }
         else if (isIgnoredUpdateSection) {
-            [label setText:[NSString stringWithFormat:@"Ignored Upgrades (%lu)", (unsigned long)ignoredUpdates.count]];
+            [label setText:[NSString stringWithFormat:@"忽略更新 (%lu)", (unsigned long)ignoredUpdates.count]];
         }
         else if (selectedSortingType == ZBSortingTypeABC && hasDataInSection) {
             [label setText:[self sectionIndexTitlesForTableView:tableView][[self trueSection:section]]];
         }
         else if (selectedSortingType == ZBSortingTypeDate) {
-            [label setText:@"Recent"];
+            [label setText:@"最近"];
         }
         
         if ([ZBDarkModeHelper darkModeEnabled]) {

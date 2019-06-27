@@ -31,7 +31,7 @@
     
     [self refreshBarButtons];
     
-    self.title = @"Queue";
+    self.title = @"队列";
 }
 
 - (IBAction)confirm:(id)sender {
@@ -51,10 +51,10 @@
 - (void)refreshBarButtons {
     if ([_queue hasErrors]) {
         self.navigationItem.rightBarButtonItem.enabled = false;
-        self.navigationItem.leftBarButtonItem.title = @"Cancel";
+        self.navigationItem.leftBarButtonItem.title = @"取消";
     } else {
         self.navigationItem.rightBarButtonItem.enabled = true;
-        self.navigationItem.leftBarButtonItem.title = @"Continue";
+        self.navigationItem.leftBarButtonItem.title = @"继续";
     }
 }
 
@@ -165,7 +165,7 @@
                     cell.detailTextLabel.text = [NSString stringWithFormat:@"%@ depends on %@", [confliction name], [package name]];
                     break;
                 default:
-                    cell.detailTextLabel.text = @"Are you proud of yourself?";
+                    cell.detailTextLabel.text = @"您为自己感到骄傲吗？";
                     break;
             }
             

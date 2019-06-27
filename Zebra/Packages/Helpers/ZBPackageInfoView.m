@@ -87,7 +87,7 @@
         infos[@"Version"] = [package version];
     }
     else {
-        infos[@"Version"] = [NSString stringWithFormat:@"%@ (Installed Version: %@)", [package version], [package installedVersion]];
+        infos[@"Version"] = [NSString stringWithFormat:@"%@ (已安装版本: %@)", [package version], [package installedVersion]];
     }
 }
 
@@ -95,7 +95,7 @@
     NSString *size = [package size];
     NSString *installedSize = [package installedSize];
     if (size && installedSize) {
-        infos[@"Size"] = [NSString stringWithFormat:@"%@ (Installed Size: %@)", size, installedSize];
+        infos[@"Size"] = [NSString stringWithFormat:@"%@ (已安装大小: %@)", size, installedSize];
     }
     else if (size) {
         infos[@"Size"] = size;
@@ -205,8 +205,8 @@
         UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
         ZBWebViewController *filesController = [storyboard instantiateViewControllerWithIdentifier:@"webController"];
         filesController.navigationDelegate = (ZBPackageDepictionViewController *)self.parentVC;
-        filesController.navigationItem.title = @"Installed Files";
-        NSURL *url = [[NSBundle mainBundle] URLForResource:@"已安装文件" withExtension:@".html"];
+        filesController.navigationItem.title = @"已安装文件系统内容";
+        NSURL *url = [[NSBundle mainBundle] URLForResource:@"installed_files" withExtension:@".html"];
         [filesController setValue:url forKey:@"_url"];
         
         [[self.parentVC navigationController] pushViewController:filesController animated:true];
