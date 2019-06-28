@@ -1,5 +1,5 @@
 
-export THEOS=/Users/hiphop/theos
+export THEOS=/opt/theos
 export THEOS_DEVICE_IP=10.0.0.30
 
 
