@@ -7,8 +7,9 @@
 //
 
 #import "ZBConsoleViewController.h"
-#import <Queue/ZBQueue.h>
 #import <NSTask.h>
+#import <ZBDevice.h>
+#import <Queue/ZBQueue.h>
 #import <Database/ZBDatabaseManager.h>
 #import <ZBAppDelegate.h>
 #import <ZBTabBarController.h>
@@ -79,7 +80,7 @@
 - (void)downloadPackages {
     NSArray *packages = [queue packagesToDownload];
     
-    [self writeToConsole:@"下载包中......\n" atLevel:ZBLogLevelInfo];
+    [self writeToConsole:@"下载包中... ...\n" atLevel:ZBLogLevelInfo];
     downloadManager = [[ZBDownloadManager alloc] init];
     downloadManager.downloadDelegate = self;
     
@@ -97,8 +98,7 @@
                 [self updateStatus:[command[0] intValue]];
             }
             else {
-                int startIndex = [command[2] isEqualToString:@"--force-depends"] ? 3 : 2;
-                for (int i = startIndex; i < [command count]; i++) {
+                for (int i = 2; i < [command count]; i++) {
                     NSString *packageID = command[i];
                     
                     if (stage == 1) {
@@ -117,7 +117,7 @@
                     }
                 }
                 
-                if (![ZBAppDelegate needsSimulation]) {
+                if (![ZBDevice needsSimulation]) {
                     NSTask *task = [[NSTask alloc] init];
                     [task setLaunchPath:@"/usr/libexec/zebra/supersling"];
                     [task setArguments:command];
@@ -144,17 +144,16 @@
     }
     else {
         if (continueWithActions) {
-            _progressText.text = @"执行操作中......";
+            _progressText.text = @"执行操作中...";
             self.navigationItem.leftBarButtonItem = nil;
-            NSArray *actions = [queue tasks:debs];
+            NSOrderedSet *actions = [queue tasks:debs];
             
             for (NSArray *command in actions) {
                 if ([command count] == 1) {
                     [self updateStatus:[command[0] intValue]];
                 }
                 else {
-                    int startIndex = [command[2] isEqualToString:@"--force-depends"] ? 3 : 2;
-                    for (int i = startIndex; i < [command count]; i++) {
+                    for (int i = 2; i < [command count]; i++) {
                         NSString *packageID = command[i];
                         if (stage == 1) {
                             BOOL update = [ZBPackage containsApp:packageID];
@@ -175,7 +174,7 @@
                         }
                     }
                     
-                    if (![ZBAppDelegate needsSimulation]) {
+                    if (![ZBDevice needsSimulation]) {
                         NSTask *task = [[NSTask alloc] init];
                         [task setLaunchPath:@"/usr/libexec/zebra/supersling"];
                         [task setArguments:command];
@@ -209,6 +208,7 @@
 - (void)finishUp {
     [queue clearQueue];
     [downloadingMap removeAllObjects];
+    _progressView.hidden = YES;
     
     NSMutableArray *uicaches = [NSMutableArray new];
     for (NSString *packageID in installedIDs) {
@@ -237,11 +237,11 @@
     }
     
     if (needsIconCacheUpdate) {
-        [self writeToConsole:@"刷新图标缓存中......\n" atLevel:ZBLogLevelInfo];
+        [self writeToConsole:@"刷新图标缓存中...\n" atLevel:ZBLogLevelInfo];
         NSMutableArray *arguments = [NSMutableArray new];
         if ([uicaches count] + [bundlePaths count] > 1) {
             [arguments addObject:@"-a"];
-            [self writeToConsole:@"这可能需要一段时间，斑马可能会崩溃。如果是这样也没关系.\n" atLevel:ZBLogLevelWarning];
+            [self writeToConsole:@"这可能需要一段时间，斑马可能会崩溃。如果是这样也没关系。\n" atLevel:ZBLogLevelWarning];
         }
         else {
             [arguments addObject:@"-p"];
@@ -254,29 +254,11 @@
             [arguments addObjectsFromArray:bundlePaths];
         }
         
-        if (![ZBAppDelegate needsSimulation]) {
-            NSTask *task = [[NSTask alloc] init];
-            [task setLaunchPath:@"/usr/bin/uicache"];
-            [task setArguments:arguments];
-            
-            NSPipe *outputPipe = [[NSPipe alloc] init];
-            NSFileHandle *output = [outputPipe fileHandleForReading];
-            [output waitForDataInBackgroundAndNotify];
-            [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receivedData:) name:NSFileHandleDataAvailableNotification object:output];
-            
-            NSPipe *errorPipe = [[NSPipe alloc] init];
-            NSFileHandle *error = [errorPipe fileHandleForReading];
-            [error waitForDataInBackgroundAndNotify];
-            [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receivedErrorData:) name:NSFileHandleDataAvailableNotification object:error];
-            
-            [task setStandardOutput:outputPipe];
-            [task setStandardError:errorPipe];
-            
-            [task launch];
-            [task waitUntilExit];
+        if (![ZBDevice needsSimulation]) {
+            [ZBDevice uicache:arguments observer:self];
         }
         else {
-            [self writeToConsole:@"刷新图标缓存在模拟器上不可用\n" atLevel:ZBLogLevelWarning];
+            [self writeToConsole:@"刷新图标缓存不适合模拟器\n" atLevel:ZBLogLevelWarning];
         }
     }
     
@@ -310,35 +292,27 @@
     [downloadingMap removeAllObjects];
     self.navigationItem.leftBarButtonItem = nil;
     _progressView.progress = 1;
+    _progressView.hidden = YES;
+    _progressText.text = nil;
+    _progressText.hidden = YES;
     [self addCloseButton];
     [queue clearQueue];
     [self removeAllDebs];
 }
 
 - (void)goodbye {
+    [self clearConsole];
     [self dismissViewControllerAnimated:true completion:nil];
 }
 
 - (void)restartSpringBoard {
     //Bye!
-    NSTask *task = [[NSTask alloc] init];
-    [task setLaunchPath:@"/usr/bin/sbreload"];
-    [task launch];
-    [task waitUntilExit];
-    
-    if ([task terminationStatus] != 0) {
-        NSLog(@"[Zebra] SBReload Failed. Trying to restart backboardd");
-        //Ideally, this is only if sbreload fails
-        [task setLaunchPath:@"/usr/libexec/zebra/supersling"];
-        [task setArguments:@[@"/bin/launchctl", @"stop", @"com.apple.backboardd"]];
-        
-        [task launch];
-    }
+    [ZBDevice sbreload];
 }
 
 - (void)refreshLocalPackages {
     ZBDatabaseManager *databaseManager = [ZBDatabaseManager sharedInstance];
-    [databaseManager setDatabaseDelegate:self];
+    [databaseManager addDatabaseDelegate:self];
     [databaseManager importLocalPackagesAndCheckForUpdates:true sender:self];
 }
 
@@ -407,11 +381,11 @@
     if (data.length) {
         [fh waitForDataInBackgroundAndNotify];
         NSString *str = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-        if ([str rangeOfString:@"warning"].location != NSNotFound) {
+        if ([str rangeOfString:@"警告"].location != NSNotFound) {
             str = [str stringByReplacingOccurrencesOfString:@"dpkg: " withString:@""];
             [self writeToConsole:str atLevel:ZBLogLevelWarning];
         }
-        else if ([str rangeOfString:@"error"].location != NSNotFound) {
+        else if ([str rangeOfString:@"错误"].location != NSNotFound) {
             str = [str stringByReplacingOccurrencesOfString:@"dpkg: " withString:@""];
             [self writeToConsole:str atLevel:ZBLogLevelError];
         }
@@ -455,8 +429,12 @@
     });
 }
 
+- (void)clearConsole {
+    _consoleView.text = nil;
+}
+
 - (IBAction)complete:(id)sender {
-    [self dismissViewControllerAnimated:true completion:nil];
+    [self goodbye];
 }
 
 #pragma mark - Hyena Delegate
@@ -487,7 +465,7 @@
         continueWithActions = false;
         [self writeToConsole:[error.localizedDescription stringByAppendingString:@"\n"] atLevel:ZBLogLevelError];
     }
-    else {
+    else if (filename) {
         [self writeToConsole:[NSString stringWithFormat:@"完成 %@\n", filename] atLevel:ZBLogLevelDescript];
     }
 }
@@ -495,11 +473,11 @@
 #pragma mark - Database Delegate
 
 - (void)databaseStartedUpdate {
-    [self writeToConsole:@"导入本地安装包中......\n" atLevel:ZBLogLevelInfo];
+    [self writeToConsole:@"导入包中.\n" atLevel:ZBLogLevelInfo];
 }
 
 - (void)databaseCompletedUpdate:(int)packageUpdates {
-    [self writeToConsole:@"导入本地安装包完成.\n" atLevel:ZBLogLevelInfo];
+    [self writeToConsole:@"导入完成.\n" atLevel:ZBLogLevelInfo];
     
     NSLog(@"[Zebra] %d updates available.", packageUpdates);
     

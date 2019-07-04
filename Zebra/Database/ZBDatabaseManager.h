@@ -26,10 +26,10 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) BOOL needsToPresentRefresh;
 
 /*!
- @brief The database delegate
- @discussion Used to communicate with the presented view controller the status of many database operations.
+ @brief The database delegates
+ @discussion Used to communicate with the view controllers the status of many database operations.
  */
-@property (nonatomic, weak) id <ZBDatabaseDelegate> databaseDelegate;
+@property (nonatomic, strong) NSMutableArray <id <ZBDatabaseDelegate>> *databaseDelegates;
 
 /*! @brief A shared instance of ZBDatabaseManager */
 + (instancetype)sharedInstance;
@@ -63,6 +63,12 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)isDatabaseOpen;
 
 /*!
+ @brief Boolean checks whether the database is being updated.
+ @return true if the database is being updated, false otherwise.
+ */
+- (BOOL)isDatabaseBeingUpdated;
+
+/*!
  @brief Prints sqlite_errmsg to the log.
  */
 - (void)printDatabaseError;
@@ -76,6 +82,13 @@ NS_ASSUME_NONNULL_BEGIN
  @param requested If true, the user has requested this update and it should be performed. If false, the database should only be updated if it hasn't been updated in the last 30 minutes.
  */
 - (void)updateDatabaseUsingCaching:(BOOL)useCaching userRequested:(BOOL)requested;
+
+/*!
+ @brief Update a repository.
+ @param repo The targer repository.
+ @param useCaching Same as above.
+ */
+- (void)updateRepo:(ZBRepo *)repo useCaching:(BOOL)useCaching;
 
 /*!
  @brief Parses files located in the filenames dictionary.
@@ -107,6 +120,12 @@ NS_ASSUME_NONNULL_BEGIN
  @brief Drops all of the tables in the database.
  */
 - (void)dropTables;
+
+/*!
+ @brief Add database delegate.
+ @param delegate A database delegate to be added.
+ */
+- (void)addDatabaseDelegate:(id <ZBDatabaseDelegate>)delegate;
 
 /*!
  @brief Saves the current date and time into NSUseDefaults.
@@ -365,8 +384,14 @@ NS_ASSUME_NONNULL_BEGIN
  @param packageList A list of packages that need to be cleaned.
  @return An array of every other version of a package in the database.
  */
-- (NSArray <ZBPackage *> *)cleanUpDuplicatePackages:(NSMutableArray <ZBPackage *> *)packageList;
+- (NSArray <ZBPackage *> *)cleanUpDuplicatePackages:(NSArray <ZBPackage *> *)packageList;
 
+/*!
+ @brief Returns all packages made by a specific author.
+ @param author The Authors name that you wish to look for.
+ @return An array of every package made by specified author.
+ */
+- (NSArray *)packagesByAuthor:(NSString *)author;
 @end
 
 NS_ASSUME_NONNULL_END

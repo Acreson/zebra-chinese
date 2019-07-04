@@ -65,7 +65,7 @@
 
 - (ZBPackage *)packageThatResolvesDependency:(NSString *)line checkProvides:(BOOL)provides {
 //    NSLog(@"[Zebra] Package that resolves dependency %@", line);
-    ZBPackage *package;
+    ZBPackage *package = nil;
     if ([line rangeOfString:@" | "].location != NSNotFound) {
         package = [self packageThatSatisfiesORComparison:line checkProvides:provides];
     }
@@ -76,9 +76,6 @@
         NSString *depPackageID = line;
         package = [databaseManager packageForID:depPackageID thatSatisfiesComparison:NULL ofVersion:NULL checkInstalled:true checkProvides:provides];
     }
-    
-    if (package == NULL)
-        return NULL;
     
     return package;
 }
@@ -139,7 +136,6 @@
     
 }
 
-//TODO: make this recursive
 - (void)conflictionsWithPackage:(ZBPackage *)package state:(int)state {
     sqlite3 *database = [databaseManager database];
     if (state == 0) { //Installing package
@@ -151,11 +147,12 @@
             if (conf != NULL && [databaseManager packageIsInstalled:conf versionStrict:true]) {
                 if ([[package provides] containsObject:conf.identifier] || [[package replaces] containsObject:conf.identifier]) {
                     // If this package can provide or replace this conflicting package, we can remove this conflicting package
+                    // This also means, we have to install "package" first before we remove "conf"
                     [queue addPackage:conf toQueue:ZBQueueTypeRemove requiredBy:package];
                 }
                 else {
-//                  NSLog(@"%@ conflicts with %@, cannot install %@", package, conf, package);
-                    [queue markPackageAsFailed:package forConflicts:conf conflictionType:0];
+                    // Just remove this package
+                    [queue addPackage:conf toQueue:ZBQueueTypeRemove];
                 }
             }
         }
@@ -168,8 +165,13 @@
             while (sqlite3_step(statement) == SQLITE_ROW) {
                 ZBPackage *conf = [[ZBPackage alloc] initWithSQLiteStatement:statement];
                 for (NSString *dep in [conf conflictsWith]) {
-                    if ([dep isEqualToString:[package identifier]]) {
-                        if ([[conf provides] containsObject:package.identifier] || [[conf replaces] containsObject:package.identifier]) {
+                    if ([dep isEqualToString:package.identifier]) {
+                        if ([[conf conflictsWith] containsObject:package.identifier]) {
+                            // If this conflicting package (conf) conflicts with this not-installed package, we remove conf
+                            [queue addPackage:conf toQueue:ZBQueueTypeRemove];
+                            continue;
+                        }
+                        else if ([[conf provides] containsObject:package.identifier] || [[conf replaces] containsObject:package.identifier]) {
                             // If this conflicting package (conf) can replace this not-installed package, we don't have to install this package (package)
                             [queue removePackage:package fromQueue:ZBQueueTypeInstall];
                             continue;
@@ -213,7 +215,7 @@
                     ZBPackage *depPackage = [self packageThatResolvesDependency:line checkProvides:false];
                     if (depPackage) {
                         ZBPackage *providingPackage = [databaseManager packageThatProvides:depPackage.identifier checkInstalled:true];
-                        if (providingPackage) {
+                        if (providingPackage && ![providingPackage sameAs:depPackage]) {
                             shouldRemove = NO;
                             break;
                         }

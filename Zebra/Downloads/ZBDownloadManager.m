@@ -8,12 +8,13 @@
 
 #import "ZBDownloadManager.h"
 #import "UICKeyChainStore.h"
-#import <ZBDeviceHelper.h>
+#import <ZBDevice.h>
 
 #import <Queue/ZBQueue.h>
 #import <ZBAppDelegate.h>
 #import <Packages/Helpers/ZBPackage.h>
 #import <Repos/Helpers/ZBRepo.h>
+#import <Repos/Helpers/ZBRepoManager.h>
 
 #import <bzlib.h>
 #import <zlib.h>
@@ -38,9 +39,7 @@
     self = [super init];
     
     if (self) {
-        queue = [ZBQueue sharedInstance];
-        filenames = [NSMutableDictionary new];
-        packageTasksMap = [NSMutableDictionary new];
+        [self commonInit];
     }
     
     return self;
@@ -52,10 +51,19 @@
     if (self) {
         downloadDelegate = delegate;
         repos = [self reposFromSourcePath:trail];
-        
-        queue = [ZBQueue sharedInstance];
-        filenames = [NSMutableDictionary new];
-        packageTasksMap = [NSMutableDictionary new];
+        [self commonInit];
+    }
+    
+    return self;
+}
+
+- (id)initWithDownloadDelegate:(id<ZBDownloadDelegate>)delegate repo:(ZBRepo *)repo {
+    self = [super init];
+    
+    if (self) {
+        downloadDelegate = delegate;
+        repos = @[ [self baseURLFromDebLine:[[ZBRepoManager sharedInstance] debLineFromRepo:repo]] ];
+        [self commonInit];
     }
     
     return self;
@@ -66,13 +74,16 @@
     
     if (self) {
         repos = [self reposFromSourcePath:trail];
-        
-        queue = [ZBQueue sharedInstance];
-        filenames = [NSMutableDictionary new];
-        packageTasksMap = [NSMutableDictionary new];
+        [self commonInit];
     }
     
     return self;
+}
+
+- (void)commonInit {
+    queue = [ZBQueue sharedInstance];
+    filenames = [NSMutableDictionary new];
+    packageTasksMap = [NSMutableDictionary new];
 }
 
 - (NSArray *)reposFromSourcePath:(NSString *)path {
@@ -109,13 +120,13 @@
     NSURL *url = [NSURL URLWithString:baseURL];
     NSString *host = [url host];
     
-    if ([[NSFileManager defaultManager] fileExistsAtPath:@"/chimera"]) { //chimera
+    if ([ZBDevice isChimera]) { //chimera
         return ([host isEqualToString:@"apt.bingner.com"] || [host isEqualToString:@"apt.saurik.com"] || [host isEqualToString:@"electrarepo64.coolstar.org"]);
     }
-    else if ([[NSFileManager defaultManager] fileExistsAtPath:@"/jb"]) { //uncover
+    else if ([ZBDevice isUncover]) { //uncover
         return ([host isEqualToString:@"repo.chimera.sh"] || [host isEqualToString:@"apt.saurik.com"] || [host isEqualToString:@"electrarepo64.coolstar.org"]);
     }
-    else if ([[NSFileManager defaultManager] fileExistsAtPath:@"/electra"]) { //electra
+    else if ([ZBDevice isElectra]) { //electra
         return ([host isEqualToString:@"repo.chimera.sh"] || [host isEqualToString:@"apt.saurik.com"] || [host isEqualToString:@"apt.bingner.com"]);
     }
     else if ([[NSFileManager defaultManager] fileExistsAtPath:@"/Applications/Cydia.app"]) { //cydia
@@ -159,8 +170,8 @@
 
 - (NSDictionary *)headersForFile:(NSString *)path {
     NSString *version = [[UIDevice currentDevice] systemVersion];
-    NSString *udid = [ZBDeviceHelper UDID];
-    NSString *machineIdentifier = [ZBDeviceHelper machineID];
+    NSString *udid = [ZBDevice UDID];
+    NSString *machineIdentifier = [ZBDevice machineID];
     
     if (path == NULL) {
         return @{@"X-Cydia-ID" : udid, @"User-Agent" : @"Telesphoreo APT-HTTP/1.0.592", @"X-Firmware": version, @"X-Unique-ID" : udid, @"X-Machine" : machineIdentifier};
@@ -303,8 +314,8 @@
     NSURLSession *session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration ephemeralSessionConfiguration]];
     UICKeyChainStore *keychain = [UICKeyChainStore keyChainStoreWithService:[ZBAppDelegate bundleID] accessGroup:nil];
     NSDictionary *test = @{ @"token": keychain[[keychain stringForKey:[package repo].baseURL]],
-                            @"udid": [ZBDeviceHelper UDID],
-                            @"device": [ZBDeviceHelper deviceModelID],
+                            @"udid": [ZBDevice UDID],
+                            @"device": [ZBDevice deviceModelID],
                             @"version": package.version,
                             @"repo": [NSString stringWithFormat:@"https://%@", [package repo].baseURL] };
     NSData *requestData = [NSJSONSerialization dataWithJSONObject:test options:(NSJSONWritingOptions)0 error:nil];
@@ -586,10 +597,9 @@
 }
 
 - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error {
-    if (error != NULL)
-        [self->downloadDelegate predator:self finishedDownloadForFile:[[[task originalRequest] URL] absoluteString] withError:error];
-    tasks--;
-    if (tasks == 0) {
+    ZBPackage *package = packageTasksMap[@(task.taskIdentifier)];
+    [self->downloadDelegate predator:self finishedDownloadForFile:[package name] withError:error];
+    if (--tasks == 0) {
         [downloadDelegate predator:self finishedAllDownloads:filenames];
     }
 }

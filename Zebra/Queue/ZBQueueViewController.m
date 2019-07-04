@@ -6,7 +6,6 @@
 //  Copyright © 2019 Wilson Styres. All rights reserved.
 //
 
-#import <ZBDarkModeHelper.h>
 #import "ZBQueue.h"
 #import <Packages/Helpers/ZBPackage.h>
 #import <Console/ZBConsoleViewController.h>
@@ -16,22 +15,22 @@
 @interface ZBQueueViewController () {
     ZBQueue *_queue;
 }
-
 @end
 
 @implementation ZBQueueViewController
 
 - (void)loadView {
     [super loadView];
-    
     _queue = [ZBQueue sharedInstance];
-    
     self.navigationController.navigationBar.tintColor = [UIColor tintColor];
     [self.tableView setSeparatorColor:[UIColor cellSeparatorColor]];
-    
     [self refreshBarButtons];
-    
     self.title = @"队列";
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    self.tableView.backgroundColor = [UIColor tableViewBackgroundColor];
 }
 
 - (IBAction)confirm:(id)sender {
@@ -78,7 +77,7 @@
 
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
     NSString *title = [[_queue actionsToPerform] objectAtIndex:section];
-    if ([title isEqual:@"Install"] || [title isEqual:@"Reinstall"] || [title isEqual:@"Upgrade"]) {
+    if ([title isEqual:@"安装"] || [title isEqual:@"重装"] || [title isEqual:@"更新"]) {
         ZBQueueType type = [_queue keyToQueue:title];
         if (type) {
             double totalDownloadSize = 0;
@@ -107,18 +106,15 @@
     // Text Color
     if ([view isKindOfClass:[UITableViewHeaderFooterView class]]) {
         UITableViewHeaderFooterView *header = (UITableViewHeaderFooterView *)view;
-        if ([ZBDarkModeHelper darkModeEnabled]) {
-            [header.textLabel setTextColor:[UIColor whiteColor]];
-        } else {
-            [header.textLabel setTextColor:[UIColor cellPrimaryTextColor]];
-        }
-        
+        header.textLabel.textColor = [UIColor cellPrimaryTextColor];
     }
-    
 }
 
 - (ZBPackage *)packageAtIndexPath:(NSIndexPath *)indexPath {
-    NSString *action = [[_queue actionsToPerform] objectAtIndex:indexPath.section];
+    NSArray *actions = [_queue actionsToPerform];
+    if (!actions.count)
+        return nil;
+    NSString *action = [actions objectAtIndex:indexPath.section];
     ZBQueueType queue = [_queue keyToQueue:action];
     return queue ? [_queue packageInQueue:queue atIndex:indexPath.row] : nil;
 }
@@ -132,7 +128,6 @@
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:identifier];
     }
     
-    //cell.backgroundColor = [UIColor whiteColor];
     ZBPackage *package = [self packageAtIndexPath:indexPath];
     if (package == nil) {
         if ([action isEqual:@"Unresolved Dependencies"]) {
@@ -165,7 +160,7 @@
                     cell.detailTextLabel.text = [NSString stringWithFormat:@"%@ depends on %@", [confliction name], [package name]];
                     break;
                 default:
-                    cell.detailTextLabel.text = @"您为自己感到骄傲吗？";
+                    cell.detailTextLabel.text = @"Are you proud of yourself?";
                     break;
             }
             
@@ -178,14 +173,14 @@
     if (package.iconPath) {
         [cell.imageView sd_setImageWithURL:[NSURL URLWithString:package.iconPath] placeholderImage:[UIImage imageNamed:@"Other"]];
         [cell.imageView.layer setCornerRadius:10];
-        [cell.imageView setClipsToBounds:TRUE];
+        [cell.imageView setClipsToBounds:YES];
     }
     else {
         UIImage *sectionImage = [UIImage imageNamed:section];
         if (sectionImage != NULL) {
             cell.imageView.image = sectionImage;
             [cell.imageView.layer setCornerRadius:10];
-            [cell.imageView setClipsToBounds:TRUE];
+            [cell.imageView setClipsToBounds:YES];
         }
     }
 

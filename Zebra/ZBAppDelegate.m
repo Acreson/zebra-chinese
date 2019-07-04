@@ -6,10 +6,12 @@
 //  Copyright © 2018 Wilson Styres. All rights reserved.
 //
 
+#import "NSTask.h"
+#import "UIProgressHUD.h"
 #import "ZBAppDelegate.h"
 #import "ZBTabBarController.h"
 #import "ZBTab.h"
-#import "ZBDarkModeHelper.h"
+#import "ZBDevice.h"
 #import <UserNotifications/UserNotifications.h>
 #import <Packages/Controllers/ZBExternalPackageTableViewController.h>
 #import <UIColor+GlobalColors.h>
@@ -23,7 +25,6 @@
 
 @end
 
-
 static const NSInteger kZebraMaxTime = 60 * 60 * 24; // 1 day
 
 @implementation ZBAppDelegate
@@ -35,36 +36,32 @@ static const NSInteger kZebraMaxTime = 60 * 60 * 24; // 1 day
 + (NSString *)documentsDirectory {
     NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
     
-    if ([paths[0] isEqualToString:@"/var/mobile/Documents"]) {
-        NSString *path = [paths[0] stringByAppendingPathComponent:[self bundleID]];
-        
-        BOOL dirExsits = FALSE;
-        [[NSFileManager defaultManager] fileExistsAtPath:path isDirectory:&dirExsits];
-        if (!dirExsits) {
-            NSLog(@"[Zebra] Creating documents directory.");
-            NSError *error;
-            [[NSFileManager defaultManager] createDirectoryAtPath:path withIntermediateDirectories:true attributes:nil error:&error];
+    for (NSString *path_ in paths) {
+        if ([path_ isEqualToString:@"/var/mobile/Documents"]) {
+            NSString *path = [path_ stringByAppendingPathComponent:[self bundleID]];
             
-            if (error != NULL) {
-                [self sendErrorToTabController:[NSString stringWithFormat:@"Error while creating documents directory: %@.", error.localizedDescription]];
-                NSLog(@"[Zebra] Error while creating documents directory: %@.", error.localizedDescription);
+            BOOL dirExists = NO;
+            [[NSFileManager defaultManager] fileExistsAtPath:path isDirectory:&dirExists];
+            if (!dirExists) {
+                NSLog(@"[Zebra] Creating documents directory.");
+                NSError *error;
+                [[NSFileManager defaultManager] createDirectoryAtPath:path withIntermediateDirectories:true attributes:nil error:&error];
+                
+                if (error != NULL) {
+                    [self sendErrorToTabController:[NSString stringWithFormat:@"Error while creating documents directory: %@.", error.localizedDescription]];
+                    NSLog(@"[Zebra] Error while creating documents directory: %@.", error.localizedDescription);
+                }
             }
+            
+            return path;
         }
-        
-        return path;
     }
-    else {
-        return paths[0];
-    }
-}
-
-+ (BOOL)needsSimulation {
-    return ![[NSFileManager defaultManager] fileExistsAtPath:@"/usr/libexec/zebra/supersling"];
+    return paths[0];
 }
 
 + (NSString *)listsLocation {
     NSString *lists = [[self documentsDirectory] stringByAppendingPathComponent:@"/lists/"];
-    BOOL dirExists = FALSE;
+    BOOL dirExists = NO;
     [[NSFileManager defaultManager] fileExistsAtPath:lists isDirectory:&dirExists];
     if (!dirExists) {
         NSLog(@"[Zebra] Creating lists directory.");
@@ -104,7 +101,7 @@ static const NSInteger kZebraMaxTime = 60 * 60 * 24; // 1 day
 
 + (NSString *)debsLocation {
     NSString *debs = [[self documentsDirectory] stringByAppendingPathComponent:@"/debs/"];
-    BOOL dirExists = FALSE;
+    BOOL dirExists = NO;
     [[NSFileManager defaultManager] fileExistsAtPath:debs isDirectory:&dirExists];
     if (!dirExists) {
         NSLog(@"[Zebra] Creating debs directory.");
@@ -119,25 +116,69 @@ static const NSInteger kZebraMaxTime = 60 * 60 * 24; // 1 day
     return debs;
 }
 
-+ (void)sendErrorToTabController:(NSString *)error {
++ (void)sendErrorToTabController:(NSString *)error blockAction:(NSString *)action block:(void (^)(void))block {
     ZBTabBarController *tabController = (ZBTabBarController *)((ZBAppDelegate *)[[UIApplication sharedApplication] delegate]).window.rootViewController;
     if (tabController != NULL) {
         dispatch_async(dispatch_get_main_queue(), ^{
             UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:@"An Error Occured" message:error preferredStyle:UIAlertControllerStyleAlert];
             
-            UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"Ok" style:UIAlertActionStyleCancel handler:nil];
-            
+            if (action != nil && block != NULL) {
+                UIAlertAction *blockAction = [UIAlertAction actionWithTitle:action style:UIAlertActionStyleDefault handler:^(UIAlertAction *action_) {
+                    block();
+                }];
+                [errorAlert addAction:blockAction];
+            }
+            UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"Dismiss" style:UIAlertActionStyleCancel handler:nil];
             [errorAlert addAction:okAction];
-            
             [tabController presentViewController:errorAlert animated:true completion:nil];
         });
     }
 }
 
++ (void)sendErrorToTabController:(NSString *)error {
+    [self sendErrorToTabController:error blockAction:nil block:NULL];
+}
+
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-    NSLog(@"[Zebra] Documents Directory: %@", [ZBAppDelegate documentsDirectory]);
+    NSString *documentsDirectory = [ZBAppDelegate documentsDirectory];
+    NSLog(@"[Zebra] Documents Directory: %@", documentsDirectory);
+    if (![ZBDevice needsSimulation] && ![documentsDirectory hasPrefix:@"/var/mobile/Documents"] &&
+        [documentsDirectory hasPrefix:@"/var/mobile/Containers/Data/Application/"] &&
+       documentsDirectory.length > 40) {
+        // Zebra is sandboxed, warn user and let them removed such auto-created sandboxed document directory
+        NSTask *task = [[NSClassFromString(@"NSTask") alloc] init];
+        [[self class] sendErrorToTabController:[NSString stringWithFormat:@"Zebra is sandboxed (Path: %@), this path has to be removed and uicache has to be run. If you ignore this, you may have several issues using Zebra. Proceed? It may take a while and your device will respring.\nIf this does not work, you can reinstall Zebra.", documentsDirectory] blockAction:@"Yes" block:^(void) {
+            [task setLaunchPath:@"/usr/libexec/zebra/supersling"];
+            [task setArguments:@[@"rm", @"-rf", documentsDirectory]];
+            
+            NSPipe *outputPipe = [[NSPipe alloc] init];
+            NSFileHandle *output = [outputPipe fileHandleForReading];
+            [output waitForDataInBackgroundAndNotify];
+            NSPipe *errorPipe = [[NSPipe alloc] init];
+            NSFileHandle *error = [errorPipe fileHandleForReading];
+            [error waitForDataInBackgroundAndNotify];
+            [task setStandardOutput:outputPipe];
+            [task setStandardError:errorPipe];
+            
+            [task launch];
+            [task waitUntilExit];
+            NSMutableArray *arguments = [NSMutableArray array];
+            if ([ZBDevice isChimera]) {
+                [arguments addObject:@"-a"];
+            }
+            dispatch_async(dispatch_get_main_queue(), ^{
+                UIProgressHUD *hud = [[UIProgressHUD alloc] init];
+                [hud setAutoresizingMask:UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight];
+                [hud setText:@"Working..."];
+                [hud showInView:UIApplication.sharedApplication.keyWindow];
+            });
+            [ZBDevice uicache:arguments observer:nil];
+            [ZBDevice sbreload];
+        }];
+        return NO;
+    }
     [self setupSDWebImageCache];
-    [ZBDarkModeHelper applySettings];
+    [ZBDevice applyThemeSettings];
     
     if (@available(iOS 10.0, *)) {
         [[UNUserNotificationCenter currentNotificationCenter] requestAuthorizationWithOptions:(UNAuthorizationOptionAlert | UNAuthorizationOptionBadge) completionHandler:^(BOOL granted, NSError * _Nullable error) {
@@ -157,19 +198,17 @@ static const NSInteger kZebraMaxTime = 60 * 60 * 24; // 1 day
     }
     
     UIApplication.sharedApplication.delegate.window.tintColor = [UIColor tintColor];
-    
     return YES;
 }
 
 - (BOOL)application:(UIApplication *)application openURL:(nonnull NSURL *)url options:(nonnull NSDictionary<UIApplicationOpenURLOptionsKey,id> *)options {
-    
     NSArray *choices = @[@"file", @"zbra", @"cydia", @"sileo"];
     int index = (int)[choices indexOfObject:[url scheme]];
     
     switch (index) {
         case 0: { //file
             if ([[url pathExtension] isEqualToString:@"deb"]) {
-                if (![ZBAppDelegate needsSimulation]) {
+                if (![ZBDevice needsSimulation]) {
                     UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"Main" bundle: nil];
                     UINavigationController *vc = [storyboard instantiateViewControllerWithIdentifier:@"externalPackageController"];
                     

@@ -1,5 +1,4 @@
 
-
 /* Class = "UINavigationItem"; title = "Sources"; ObjectID = "08I-GH-0Ip"; */
 "08I-GH-0Ip.title" = "软件源";
 
@@ -9,11 +8,17 @@
 /* Class = "UITabBarItem"; title = "Home"; ObjectID = "2br-hO-A7c"; */
 "2br-hO-A7c.title" = "首页";
 
+/* Class = "UIBarButtonItem"; title = "DarkMode"; ObjectID = "2dE-CN-evu"; */
+"2dE-CN-evu.title" = "暗黑模式";
+
 /* Class = "UINavigationItem"; title = "Search"; ObjectID = "31H-5B-Xgc"; */
 "31H-5B-Xgc.title" = "搜索";
 
 /* Class = "UINavigationItem"; title = "Alternate Icons"; ObjectID = "4hP-li-yF0"; */
-"4hP-li-yF0.title" = "不同的图标";
+"4hP-li-yF0.title" = "变换图标";
+
+/* Class = "UIBarButtonItem"; title = "Settings"; ObjectID = "5Na-Lv-DT1"; */
+"5Na-Lv-DT1.title" = "S设置";
 
 /* Class = "UIBarButtonItem"; title = "Add"; ObjectID = "6kO-W0-z9d"; */
 "6kO-W0-z9d.title" = "添加";
@@ -25,31 +30,37 @@
 "7Ob-xQ-Odl.title" = "搜索";
 
 /* Class = "UIBarButtonItem"; title = "Close"; ObjectID = "Bpj-dl-pWU"; */
-"Bpj-dl-pWU.title" = "取消";
+"Bpj-dl-pWU.title" = "关闭";
 
 /* Class = "UILabel"; text = "Progress Text"; ObjectID = "BuP-O1-Zgo"; */
-"BuP-O1-Zgo.text" = "进步的文本";
+"BuP-O1-Zgo.text" = "Progress Text";
 
-/* Class = "UIBarButtonItem"; title = "Close"; ObjectID = "DHO-lT-Plp"; */
-"DHO-lT-Plp.title" = "关闭";
+/* Class = "UITableViewController"; title = "Wish List"; ObjectID = "EZp-oK-GMJ"; */
+"EZp-oK-GMJ.title" = "愿望清单";
 
 /* Class = "UINavigationItem"; title = "Stores"; ObjectID = "Fol-dR-guQ"; */
-"Fol-dR-guQ.title" = "商店";
+"Fol-dR-guQ.title" = "越狱商店";
+
+/* Class = "UILabel"; text = "UDID"; ObjectID = "I0l-s2-v3D"; */
+"I0l-s2-v3D.text" = "UDID";
 
 /* Class = "UILabel"; text = "URL"; ObjectID = "JFl-XH-yhm"; */
 "JFl-XH-yhm.text" = "URL";
 
 /* Class = "UITabBarItem"; title = "Packages"; ObjectID = "LuL-3D-0wp"; */
-"LuL-3D-0wp.title" = "安装包";
+"LuL-3D-0wp.title" = "软件包";
 
 /* Class = "UINavigationItem"; title = "Install External Package"; ObjectID = "MQI-VB-IdN"; */
-"MQI-VB-IdN.title" = "安装扩展包";
+"MQI-VB-IdN.title" = "安装外部包";
 
 /* Class = "UILabel"; text = "Detail"; ObjectID = "NsY-iH-dLr"; */
-"NsY-iH-dLr.text" = "详情";
+"NsY-iH-dLr.text" = "细节";
 
 /* Class = "UITabBarItem"; title = "Changes"; ObjectID = "Nxh-VC-OjH"; */
 "Nxh-VC-OjH.title" = "变更";
+
+/* Class = "UILabel"; text = "Zebra Info"; ObjectID = "OLj-LP-ZdY"; */
+"OLj-LP-ZdY.text" = "斑马信息";
 
 /* Class = "UILabel"; text = "URL"; ObjectID = "OqU-Fo-9Nw"; */
 "OqU-Fo-9Nw.text" = "URL";
@@ -66,14 +77,17 @@
 /* Class = "UILabel"; text = "Subtitle"; ObjectID = "XlQ-5c-DZ1"; */
 "XlQ-5c-DZ1.text" = "副标题";
 
+/* Class = "UILabel"; text = "Zebra + Version"; ObjectID = "Yye-PV-Xqq"; */
+"Yye-PV-Xqq.text" = "斑马+版本";
+
 /* Class = "UINavigationItem"; title = "Changes"; ObjectID = "eZC-Ua-ycq"; */
 "eZC-Ua-ycq.title" = "变更";
 
 /* Class = "UINavigationItem"; title = "Packages"; ObjectID = "gE6-EQ-6Uj"; */
-"gE6-EQ-6Uj.title" = "安装包";
+"gE6-EQ-6Uj.title" = "软件包";
 
 /* Class = "UILabel"; text = "Email"; ObjectID = "gzb-2p-Jk6"; */
-"gzb-2p-Jk6.text" = "邮件";
+"gzb-2p-Jk6.text" = "邮箱";
 
 /* Class = "UIBarButtonItem"; title = "Install"; ObjectID = "hET-rE-7Dw"; */
 "hET-rE-7Dw.title" = "安装";
@@ -85,7 +99,7 @@
 "j1j-pb-Xsj.text" = "列表";
 
 /* Class = "UINavigationItem"; title = "Add Repo(s)"; ObjectID = "mbr-uZ-nXO"; */
-"mbr-uZ-nXO.title" = "添加源";
+"mbr-uZ-nXO.title" = "添加源(s)";
 
 /* Class = "UILabel"; text = "Repo Name"; ObjectID = "p4v-97-LNE"; */
 "p4v-97-LNE.text" = "源名称";
