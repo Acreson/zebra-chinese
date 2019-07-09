@@ -29,7 +29,6 @@ typedef enum ZBLinksOrder : NSUInteger {
     ZBWilsonTwitter
 } ZBLinksOrder;
 
-
 @interface ZBHomeTableViewController ()
 
 @end
@@ -57,16 +56,8 @@ typedef enum ZBLinksOrder : NSUInteger {
     [self colorWindow];
 }
 
-- (void)didReceiveMemoryWarning {
-    [super didReceiveMemoryWarning];
-    // Dispose of any resources that can be recreated.
-}
-
-
-
 //Stub for now
 - (void)checkFeaturedPackages {
-    NSLog(@"Running");
     [self.featuredCollection removeFromSuperview];
     UIView *blankHeader = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 0, CGFLOAT_MIN)];
     self.tableView.tableHeaderView = blankHeader;
@@ -126,7 +117,7 @@ typedef enum ZBLinksOrder : NSUInteger {
     [self.udidLabel setFont:[UIFont systemFontOfSize:13]];
     [self.udidLabel setTextColor:[UIColor cellSecondaryTextColor]];
     [self.udidLabel setNumberOfLines:1];
-    [self.udidLabel setAdjustsFontSizeToFitWidth:TRUE];
+    [self.udidLabel setAdjustsFontSizeToFitWidth:YES];
     [self.udidLabel setText:[ZBDevice UDID]];
 }
 
@@ -140,19 +131,14 @@ typedef enum ZBLinksOrder : NSUInteger {
     switch (section) {
         case ZBWelcome:
             return 1;
-            break;
         case ZBViews:
             return 5;
-            break;
         case ZBLinks:
             return 2;
-            break;
         case ZBCredits:
             return 1;
-            break;
         default:
             return 0;
-            break;
     }
 }
 
@@ -166,12 +152,11 @@ typedef enum ZBLinksOrder : NSUInteger {
             if (cell == nil) {
                 cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cellIdentifier];
             }
-            cell.textLabel.text = @"欢迎使用斑马汉化优化版(Acreson修改)!";
+            cell.textLabel.text = @"欢迎使用斑马测试版(Acreson提供汉化优化)!";
             [cell.textLabel setTextColor:[UIColor cellPrimaryTextColor]];
             [cell setSelectionStyle:UITableViewCellSelectionStyleNone];
             return cell;
         }
-            break;
         case ZBViews: {
             static NSString *cellIdentifier = @"viewCell";
             
@@ -214,7 +199,6 @@ typedef enum ZBLinksOrder : NSUInteger {
             [cell.textLabel sizeToFit];
             return cell;
         }
-            break;
         case ZBLinks: {
             static NSString *cellIdentifier = @"linkCell";
             
@@ -227,11 +211,11 @@ typedef enum ZBLinksOrder : NSUInteger {
             UIImage *image;
             switch (indexPath.row) {
                 case ZBDiscord:
-                    text = @"加入我的Discord";
+                    text = @"加入Discord";
                     image = [UIImage imageNamed:@"discord"];
                     break;
                 case ZBWilsonTwitter:
-                    text = @"关注我的推特";
+                    text = @"关注推特";
                     image = [UIImage imageNamed:@"twitter"];
                     break;
             }
@@ -245,7 +229,6 @@ typedef enum ZBLinksOrder : NSUInteger {
             
         }
            
-            break;
         case ZBCredits: {
             static NSString *cellIdentifier = @"creditCell";
             
@@ -262,39 +245,30 @@ typedef enum ZBLinksOrder : NSUInteger {
             [cell.textLabel sizeToFit];
             return cell;
         }
-            break;
             
         default:
             return nil;
-            break;
     }
 }
 
-- (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section {
-    UIView *view = [[UIView alloc] initWithFrame:CGRectMake(0, 0, tableView.frame.size.width, 0)];
-    UILabel *label = [[UILabel alloc] initWithFrame:CGRectMake(20, 0, tableView.frame.size.width - 10, 18)];
-    [view setBackgroundColor:[UIColor tableViewBackgroundColor]];
-    [label setFont:[UIFont boldSystemFontOfSize:15]];
-    [label setText:[self sectionTitleForSection:section]];
-    [label setTextColor:[UIColor cellSecondaryTextColor]];
-    [view addSubview:label];
-    label.translatesAutoresizingMaskIntoConstraints = NO;
-    [view addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|-16-[label]-10-|" options:0 metrics:nil views:NSDictionaryOfVariableBindings(label)]];
-    [view addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:[label]-5-|" options:0 metrics:nil views:NSDictionaryOfVariableBindings(label)]];
-    return view;
+- (void)tableView:(UITableView *)tableView willDisplayHeaderView:(UIView *)view forSection:(NSInteger)section {
+    UITableViewHeaderFooterView *header = (UITableViewHeaderFooterView *)view;
+    header.backgroundColor = [UIColor tableViewBackgroundColor];
+    header.textLabel.font = [UIFont boldSystemFontOfSize:15];
+    header.textLabel.textColor = [UIColor cellSecondaryTextColor];
+    header.tintColor = [UIColor clearColor];
+    //Don't change this to clear color, it breaks the animation.
+    [(UIView *)[header valueForKey:@"_backgroundView"] setBackgroundColor:[UIColor tableViewBackgroundColor]];
 }
 
-- (NSString *)sectionTitleForSection:(NSInteger)section {
+- (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
     switch (section) {
         case ZBWelcome:
             return @"信息";
-            break;
         case ZBViews:
             return @"";
-            break;
         case ZBLinks:
             return @"社区";
-            break;
         case ZBCredits:
             return @"";
         default:
@@ -306,7 +280,7 @@ typedef enum ZBLinksOrder : NSUInteger {
     return 60;
 }
 
-- (void)setImageSize:(UIImageView *)imageView{
+- (void)setImageSize:(UIImageView *)imageView {
     CGSize itemSize = CGSizeMake(29, 29);
     UIGraphicsBeginImageContextWithOptions(itemSize, NO, UIScreen.mainScreen.scale);
     CGRect imageRect = CGRectMake(0.0, 0.0, itemSize.width, itemSize.height);
@@ -331,7 +305,7 @@ typedef enum ZBLinksOrder : NSUInteger {
         default:
             break;
     }
-    [tableView deselectRowAtIndexPath:indexPath animated:TRUE];
+    [tableView deselectRowAtIndexPath:indexPath animated:YES];
 }
 
 - (void)pushToView:(NSUInteger)row {
@@ -398,8 +372,8 @@ typedef enum ZBLinksOrder : NSUInteger {
 - (void)openLinkFromRow:(NSUInteger)row {
     UIApplication *application = [UIApplication sharedApplication];
     switch (row) {
-        case ZBDiscord:{
-            [self openURL:[NSURL URLWithString:@"https://discord.gg/6CPtHBU"]];
+        case ZBDiscord: {
+            [self openURL:[NSURL URLWithString:@"https://discord.gg/B9k69vc"]];
         }
             break;
         case ZBWilsonTwitter: {
@@ -438,7 +412,7 @@ typedef enum ZBLinksOrder : NSUInteger {
         settingsController.navigationItem.largeTitleDisplayMode = UINavigationItemLargeTitleDisplayModeNever;
     }
     //[[self navigationController] pushViewController:settingsController animated:true];
-    [[self navigationController] presentViewController:settingsController animated:TRUE completion:nil];
+    [[self navigationController] presentViewController:settingsController animated:YES completion:nil];
 }
 
 #pragma mark darkmode
@@ -453,13 +427,11 @@ typedef enum ZBLinksOrder : NSUInteger {
         [feedback prepare];
         [feedback selectionChanged];
         feedback = nil;
-    } else {
-        return;// Fallback on earlier versions
     }
 }
 
 - (void)darkMode {
-    [ZBDevice setDarkModeEnabled:([ZBDevice darkModeEnabled]) ? FALSE : TRUE];
+    [ZBDevice setDarkModeEnabled:([ZBDevice darkModeEnabled]) ? NO : YES];
     [self.darkModeButton setImage:([ZBDevice darkModeEnabled]) ? [UIImage imageNamed:@"Dark"] : [UIImage imageNamed:@"Light"]];
     if ([ZBDevice darkModeEnabled]) {
         [ZBDevice configureDarkMode];

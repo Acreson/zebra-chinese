@@ -147,6 +147,7 @@
     if ([ZBDevice darkModeEnabled]) {
         [request setValue:@"TRUE" forHTTPHeaderField:@"Dark"];
         if([ZBDevice darkModeOledEnabled]) {
+            //These headers must be "TRUE" no one change these to "YES" or else some repos will not be able to detect it.
             [request setValue:@"TRUE" forHTTPHeaderField:@"Oled"];
             [request setValue:@"Telesphoreo APT-HTTP/1.0.592 Oled" forHTTPHeaderField:@"User-Agent"];
         } else {
@@ -206,7 +207,7 @@
         UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
         ZBWebViewController *filesController = [storyboard instantiateViewControllerWithIdentifier:@"webController"];
         filesController.navigationDelegate = self;
-        filesController.navigationItem.title = @"文件系统内容";
+        filesController.navigationItem.title = @"Installed Files";
         NSURL *url = [[NSBundle mainBundle] URLForResource:action withExtension:@".html"];
         [filesController setValue:url forKey:@"_url"];
         
@@ -217,23 +218,6 @@
 - (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation {
     if (package == nil)
         return;
-    
-    packageInfoView = [[[NSBundle mainBundle] loadNibNamed:@"ZBPackageInfoView" owner:nil options:nil] firstObject];
-    [packageInfoView setPackage:package];
-    [packageInfoView setParentVC:self];
-    packageInfoView.translatesAutoresizingMaskIntoConstraints = NO;
-    [webView.scrollView addSubview:packageInfoView];
-    CGFloat pad = 165 + [packageInfoView rowCount] * [ZBPackageInfoView rowHeight];
-    [packageInfoView.topAnchor constraintEqualToAnchor:webView.scrollView.topAnchor constant:-pad].active = YES;
-    [packageInfoView.heightAnchor constraintEqualToConstant:pad].active = YES;
-    [packageInfoView.widthAnchor constraintEqualToAnchor:self.view.widthAnchor multiplier:1.0].active = YES;
-    [packageInfoView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor].active = YES;
-    [packageInfoView.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor].active = YES;
-    [packageInfoView setBackgroundColor:[UIColor tableViewBackgroundColor]];
-    
-    webView.scrollView.contentInset = UIEdgeInsetsMake(pad, 0, 0, 0);
-    webView.scrollView.scrollIndicatorInsets = UIEdgeInsetsMake(pad, 0, 0, 0);
-    [webView.scrollView setContentOffset:CGPointMake(0, -webView.scrollView.contentInset.top) animated:FALSE];
     
     NSString *js = @"var meta = document.createElement('meta'); meta.name = 'viewport'; meta.content = 'initial-scale=1, maximum-scale=1, user-scalable=0'; var head = document.getElementsByTagName('head')[0]; head.appendChild(meta);";
     [webView evaluateJavaScript:js completionHandler:nil];
@@ -334,6 +318,22 @@
             
             [webView evaluateJavaScript:[NSString stringWithFormat:@"addFile(\"%@\");", displayStr] completionHandler:nil];
         }
+    } else {
+        packageInfoView = [[[NSBundle mainBundle] loadNibNamed:@"ZBPackageInfoView" owner:nil options:nil] firstObject];
+        [packageInfoView setPackage:package];
+        [packageInfoView setParentVC:self];
+        packageInfoView.translatesAutoresizingMaskIntoConstraints = NO;
+        [webView.scrollView addSubview:packageInfoView];
+        CGFloat pad = 165 + [packageInfoView rowCount] * [ZBPackageInfoView rowHeight];
+        [packageInfoView.topAnchor constraintEqualToAnchor:webView.scrollView.topAnchor constant:-pad].active = YES;
+        [packageInfoView.heightAnchor constraintEqualToConstant:pad].active = YES;
+        [packageInfoView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor].active = YES;
+        [packageInfoView.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor].active = YES;
+        [packageInfoView setBackgroundColor:[UIColor tableViewBackgroundColor]];
+        
+        webView.scrollView.contentInset = UIEdgeInsetsMake(pad, 0, 0, 0);
+        webView.scrollView.scrollIndicatorInsets = UIEdgeInsetsMake(pad, 0, 0, 0);
+        [webView.scrollView setContentOffset:CGPointMake(0, -webView.scrollView.contentInset.top) animated:NO];
     }
     
 }
@@ -380,7 +380,7 @@
             if ([package isPaid] && [keychain[[keychain stringForKey:[package repo].baseURL]] length] != 0) {
                 [self determinePaidPackage];
             } else {
-                UIBarButtonItem *modifyButton = [[UIBarButtonItem alloc] initWithTitle:@"更改" style:UIBarButtonItemStylePlain target:self action:@selector(modifyPackage)];
+                UIBarButtonItem *modifyButton = [[UIBarButtonItem alloc] initWithTitle:@"Modify" style:UIBarButtonItemStylePlain target:self action:@selector(modifyPackage)];
                 self.navigationItem.rightBarButtonItem = modifyButton;
             }
         }
@@ -420,6 +420,7 @@
             [request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
             [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
             [request setValue:[NSString stringWithFormat:@"%lu", (unsigned long)[requestData length]] forHTTPHeaderField:@"Content-Length"];
+            [request setValue:[NSString stringWithFormat:@"Zebra/%@ iOS/%@ (%@)", PACKAGE_VERSION, [[UIDevice currentDevice] systemVersion], [ZBDevice deviceType]] forHTTPHeaderField:@"User-Agent"];
             [request setHTTPBody: requestData];
             [[session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
                 NSString *title = [[ZBQueue sharedInstance] queueToKey:ZBQueueTypeInstall];

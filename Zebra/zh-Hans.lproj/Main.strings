@@ -9,16 +9,16 @@
 "2br-hO-A7c.title" = "首页";
 
 /* Class = "UIBarButtonItem"; title = "DarkMode"; ObjectID = "2dE-CN-evu"; */
-"2dE-CN-evu.title" = "暗黑模式";
+"2dE-CN-evu.title" = "暗夜模式";
 
 /* Class = "UINavigationItem"; title = "Search"; ObjectID = "31H-5B-Xgc"; */
 "31H-5B-Xgc.title" = "搜索";
 
 /* Class = "UINavigationItem"; title = "Alternate Icons"; ObjectID = "4hP-li-yF0"; */
-"4hP-li-yF0.title" = "变换图标";
+"4hP-li-yF0.title" = "变更图标";
 
 /* Class = "UIBarButtonItem"; title = "Settings"; ObjectID = "5Na-Lv-DT1"; */
-"5Na-Lv-DT1.title" = "S设置";
+"5Na-Lv-DT1.title" = "设置";
 
 /* Class = "UIBarButtonItem"; title = "Add"; ObjectID = "6kO-W0-z9d"; */
 "6kO-W0-z9d.title" = "添加";
@@ -33,19 +33,16 @@
 "Bpj-dl-pWU.title" = "关闭";
 
 /* Class = "UILabel"; text = "Progress Text"; ObjectID = "BuP-O1-Zgo"; */
-"BuP-O1-Zgo.text" = "Progress Text";
+"BuP-O1-Zgo.text" = "提升数据";
 
 /* Class = "UITableViewController"; title = "Wish List"; ObjectID = "EZp-oK-GMJ"; */
 "EZp-oK-GMJ.title" = "愿望清单";
 
 /* Class = "UINavigationItem"; title = "Stores"; ObjectID = "Fol-dR-guQ"; */
-"Fol-dR-guQ.title" = "越狱商店";
+"Fol-dR-guQ.title" = "商店";
 
 /* Class = "UILabel"; text = "UDID"; ObjectID = "I0l-s2-v3D"; */
 "I0l-s2-v3D.text" = "UDID";
-
-/* Class = "UILabel"; text = "URL"; ObjectID = "JFl-XH-yhm"; */
-"JFl-XH-yhm.text" = "URL";
 
 /* Class = "UITabBarItem"; title = "Packages"; ObjectID = "LuL-3D-0wp"; */
 "LuL-3D-0wp.title" = "软件包";
@@ -54,16 +51,13 @@
 "MQI-VB-IdN.title" = "安装外部包";
 
 /* Class = "UILabel"; text = "Detail"; ObjectID = "NsY-iH-dLr"; */
-"NsY-iH-dLr.text" = "细节";
+"NsY-iH-dLr.text" = "详情";
 
 /* Class = "UITabBarItem"; title = "Changes"; ObjectID = "Nxh-VC-OjH"; */
 "Nxh-VC-OjH.title" = "变更";
 
 /* Class = "UILabel"; text = "Zebra Info"; ObjectID = "OLj-LP-ZdY"; */
 "OLj-LP-ZdY.text" = "斑马信息";
-
-/* Class = "UILabel"; text = "URL"; ObjectID = "OqU-Fo-9Nw"; */
-"OqU-Fo-9Nw.text" = "URL";
 
 /* Class = "UITabBarItem"; title = "Sources"; ObjectID = "P6k-Pc-rHZ"; */
 "P6k-Pc-rHZ.title" = "软件源";
@@ -101,11 +95,8 @@
 /* Class = "UINavigationItem"; title = "Add Repo(s)"; ObjectID = "mbr-uZ-nXO"; */
 "mbr-uZ-nXO.title" = "添加源(s)";
 
-/* Class = "UILabel"; text = "Repo Name"; ObjectID = "p4v-97-LNE"; */
-"p4v-97-LNE.text" = "源名称";
-
 /* Class = "UINavigationItem"; title = "Account"; ObjectID = "qF9-ad-Phi"; */
-"qF9-ad-Phi.title" = "账户";
+"qF9-ad-Phi.title" = "关于";
 
 /* Class = "UILabel"; text = "Title"; ObjectID = "rZ1-lO-iJO"; */
 "rZ1-lO-iJO.text" = "列表";
@@ -117,10 +108,7 @@
 "uSZ-TC-nHR.title" = "队列";
 
 /* Class = "UILabel"; text = "Detail"; ObjectID = "utG-bq-Bqo"; */
-"utG-bq-Bqo.text" = "详情";
-
-/* Class = "UILabel"; text = "Repo Name"; ObjectID = "ux4-DQ-4Xp"; */
-"ux4-DQ-4Xp.text" = "源名称";
+"utG-bq-Bqo.text" = "细节";
 
 /* Class = "UIBarButtonItem"; title = "Confirm"; ObjectID = "vfP-8Y-pVN"; */
 "vfP-8Y-pVN.title" = "确认";

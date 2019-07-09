@@ -20,6 +20,7 @@
 + (BOOL)isChimera;
 + (BOOL)isElectra;
 + (BOOL)isUncover;
++ (NSString *_Nonnull)deviceType;
 
 //Dark Mode
 + (BOOL)darkModeEnabled;

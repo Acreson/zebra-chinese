@@ -138,7 +138,12 @@
             if (package == NULL) return;
         }
         packageQueues[package.identifier] = @(queue);
-        [queueArray addObject:package];
+        if (requiredPackage) {
+            [queueArray insertObject:package atIndex:[queueArray indexOfObject:requiredPackage]];
+        }
+        else {
+            [queueArray addObject:package];
+        }
         [self clearPackage:package inOtherQueuesExcept:queue];
         if (!ignore) {
             if (requiredPackage) {
@@ -462,7 +467,7 @@
     NSMutableArray *packages = [NSMutableArray new];
     
     for (NSString *key in _managedQueue) {
-        if (![key isEqualToString:@"移除"]) {
+        if (![key isEqualToString:@"Remove"]) {
             [packages addObjectsFromArray:_managedQueue[key]];
         }
     }
@@ -472,7 +477,7 @@
 
 - (BOOL)needsHyena {
     for (NSString *key in _managedQueue) {
-        if (![key isEqualToString:@"移除"] && [_managedQueue[key] count]) {
+        if (![key isEqualToString:@"Remove"] && [_managedQueue[key] count]) {
             return true;
         }
     }

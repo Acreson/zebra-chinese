@@ -80,7 +80,7 @@
                 
                 if (readError != NULL) {
                     //rip
-                    respond(false, readError.localizedDescription, @[]);
+                    respond(false, [NSString stringWithFormat:@"%@ (%@)", readError.localizedDescription, sourcesList], @[]);
                     return;
                 }
                 
@@ -168,7 +168,7 @@
                     
                     if (strongSelf) {
                         if ([verifiedURLs count] == 0 && [errorURLs count] == 0) {
-                            respond(NO, @"您已经添加了这个源.", @[]);
+                            respond(NO, @"You have already added these repositories.", @[]);
                         }
                         else {
                             __block NSError *addError = nil;

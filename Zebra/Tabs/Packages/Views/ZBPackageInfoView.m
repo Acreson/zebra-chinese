@@ -99,15 +99,15 @@ enum ZBPackageInfoOrder {
 - (void)checkWishList:(ZBPackage *)package {
     NSArray *wishList = [[NSUserDefaults standardUserDefaults] objectForKey:@"wishList"];
     if ([wishList containsObject:package.identifier]) {
-        infos[@"wishList"] = @"愿望单中移除";
+        infos[@"wishList"] = @"Remove from Wishlist";
     } else {
-        infos[@"wishList"] = @"添加到愿望单";
+        infos[@"wishList"] = @"Add to Wishlist";
     }
 }
 
 - (void)setMoreByText:(ZBPackage *)package {
     if (package.author) {
-        infos[@"moreBy"] = @"作者更多的作品";
+        infos[@"moreBy"] = @"More by this Developer";
     } else {
         [infos removeObjectForKey:@"moreBy"];
     }
@@ -118,7 +118,7 @@ enum ZBPackageInfoOrder {
         infos[@"Version"] = [package version];
     }
     else {
-        infos[@"Version"] = [NSString stringWithFormat:@"%@ (已安装的版本: %@)", [package version], [package installedVersion]];
+        infos[@"Version"] = [NSString stringWithFormat:@"%@ (Installed Version: %@)", [package version], [package installedVersion]];
     }
 }
 
@@ -126,7 +126,7 @@ enum ZBPackageInfoOrder {
     NSString *size = [package size];
     NSString *installedSize = [package installedSize];
     if (size && installedSize) {
-        infos[@"Size"] = [NSString stringWithFormat:@"%@ (已安装的大小: %@)", size, installedSize];
+        infos[@"Size"] = [NSString stringWithFormat:@"%@ (Installed Size: %@)", size, installedSize];
     }
     else if (size) {
         infos[@"Size"] = size;

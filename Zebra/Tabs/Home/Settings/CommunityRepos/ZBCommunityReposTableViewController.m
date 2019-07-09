@@ -7,6 +7,7 @@
 //
 
 #import "ZBCommunityReposTableViewController.h"
+#import <Repos/Helpers/ZBRepoTableViewCell.h>
 
 enum ZBSourcesOrder {
     ZBTransfer,
@@ -25,8 +26,10 @@ enum ZBSourcesOrder {
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    [self.navigationItem setTitle:@"软件源库(Acreson)"];
+    [self.tableView setBackgroundColor:[UIColor tableViewBackgroundColor]];
+    [self.navigationItem setTitle:@"软件源库"];
     [self.tableView setSeparatorStyle:UITableViewCellSeparatorStyleNone];
+    [self.tableView registerNib:[UINib nibWithNibName:@"ZBRepoTableViewCell" bundle:nil] forCellReuseIdentifier:@"repoTableViewCell"];
     availableManagers = [NSMutableArray new];
     self.repoManager = [ZBRepoManager sharedInstance];
 }
@@ -34,11 +37,6 @@ enum ZBSourcesOrder {
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
     [self fetchRepoJSON];
-}
-
-- (void)didReceiveMemoryWarning {
-    [super didReceiveMemoryWarning];
-    // Dispose of any resources that can be recreated.
 }
 
 - (void)fetchRepoJSON {
@@ -111,43 +109,19 @@ enum ZBSourcesOrder {
 
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
+    ZBRepoTableViewCell *cell = (ZBRepoTableViewCell *)[tableView dequeueReusableCellWithIdentifier:@"repoTableViewCell" forIndexPath:indexPath];
+    NSString *cellText = nil;
+    NSURL *iconURL = nil;
+    NSURL *repoURL = nil;
     if (indexPath.section == 0) {
-        static NSString *cellIdentifier = @"transferCell";
-        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellIdentifier];
-        
-        if (cell == nil) {
-            cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cellIdentifier];
-        }
-        NSURL *iconURL;
         if ([[availableManagers objectAtIndex:indexPath.row] isEqualToString:@"Cydia"]) {
             iconURL = [NSURL URLWithString:@"http://apt.saurik.com/dists/ios/CydiaIcon.png"];
         } else {
             iconURL = [NSURL URLWithString:@"https://xtm3x.github.io/repo/depictions/icons/sileo@3x.png"];
         }
-        NSString *titleString = [NSString stringWithFormat:@"一键搬迁 %@ 的所有源到斑马", [availableManagers objectAtIndex:indexPath.row]];
-        [cell.textLabel setText:titleString];
-        [cell.textLabel setTextColor:[UIColor cellPrimaryTextColor]];
-        [cell setAccessoryType:UITableViewCellAccessoryDisclosureIndicator];
-        [cell.imageView sd_setImageWithURL:iconURL placeholderImage:[UIImage imageNamed:@"Unknown"]];
-        CGSize itemSize = CGSizeMake(40, 40);
-        UIGraphicsBeginImageContextWithOptions(itemSize, NO, UIScreen.mainScreen.scale);
-        CGRect imageRect = CGRectMake(0.0, 0.0, itemSize.width, itemSize.height);
-        [cell.imageView.image drawInRect:imageRect];
-        cell.imageView.image = UIGraphicsGetImageFromCurrentImageContext();
-        UIGraphicsEndImageContext();
-        [cell.imageView.layer setCornerRadius:10];
-        [cell.imageView setClipsToBounds:YES];
-        [cell.textLabel sizeToFit];
-        return cell;
-    }else if (indexPath.section == 1) {
-        static NSString *cellIdentifier = @"jailbreakCell";
-        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellIdentifier];
-        
-        if (cell == nil) {
-            cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cellIdentifier];
-        }
-        NSString *cellText;
-        NSURL *iconURL;
+        cellText = [NSString stringWithFormat:@"一键复制 %@ 的所有源", [availableManagers objectAtIndex:indexPath.row]];
+    }
+    else if (indexPath.section == 1) {
         if ([ZBDevice isChimera]) {
             cellText = @"Chimera";
             iconURL = [NSURL URLWithString:@"https://repo.chimera.sh/CydiaIcon.png"];
@@ -164,84 +138,51 @@ enum ZBSourcesOrder {
             cellText = @"Cydia/Telesphoreo";
             iconURL = [NSURL URLWithString:@"http://apt.saurik.com/dists/ios/CydiaIcon.png"];
         }
-        [cell.textLabel setText:cellText];
-        [cell.imageView sd_setImageWithURL:iconURL placeholderImage:[UIImage imageNamed:@"Unknown"]];
-        [cell.textLabel setTextColor:[UIColor cellPrimaryTextColor]];
-        
-        CGSize itemSize = CGSizeMake(40, 40);
-        UIGraphicsBeginImageContextWithOptions(itemSize, NO, UIScreen.mainScreen.scale);
-        CGRect imageRect = CGRectMake(0.0, 0.0, itemSize.width, itemSize.height);
-        [cell.imageView.image drawInRect:imageRect];
-        cell.imageView.image = UIGraphicsGetImageFromCurrentImageContext();
-        UIGraphicsEndImageContext();
-        [cell.imageView.layer setCornerRadius:10];
-        [cell.imageView setClipsToBounds:YES];
-        [cell setAccessoryType:UITableViewCellAccessoryDisclosureIndicator];
-        return cell;
-        
-    } else {
-        static NSString *cellIdentifier = @"repoCell";
-        NSDictionary *dataDict = [communityRepos objectAtIndex:indexPath.row];
-        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellIdentifier];
-        
-        if (cell == nil) {
-            cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:cellIdentifier];
-        }
-        if ([dataDict objectForKey:@"name"]) {
-            [cell.textLabel setText:dataDict[@"name"]];
-        }
-        if ([dataDict objectForKey:@"url"]) {
-            [cell.detailTextLabel setText:dataDict[@"url"]];
-        }
-        if ([dataDict objectForKey:@"icon"]) {
-            [cell.imageView sd_setImageWithURL:[NSURL URLWithString:dataDict[@"icon"]] placeholderImage:[UIImage imageNamed:@"Unknown"]];
-        } else {
-            [cell.imageView setImage:[UIImage imageNamed:@"Unknown"]];
-        }
-        [cell.textLabel setTextColor:[UIColor cellPrimaryTextColor]];
-        [cell.detailTextLabel setTextColor:[UIColor cellSecondaryTextColor]];
-        
-        CGSize itemSize = CGSizeMake(40, 40);
-        UIGraphicsBeginImageContextWithOptions(itemSize, NO, UIScreen.mainScreen.scale);
-        CGRect imageRect = CGRectMake(0.0, 0.0, itemSize.width, itemSize.height);
-        [cell.imageView.image drawInRect:imageRect];
-        cell.imageView.image = UIGraphicsGetImageFromCurrentImageContext();
-        UIGraphicsEndImageContext();
-        [cell.imageView.layer setCornerRadius:10];
-        [cell.imageView setClipsToBounds:YES];
-        [cell setAccessoryType:UITableViewCellAccessoryDisclosureIndicator];
-        return cell;
-        
     }
+    else {
+        NSDictionary *dataDict = [communityRepos objectAtIndex:indexPath.row];
+        cellText = dataDict[@"name"];
+        repoURL = [NSURL URLWithString:dataDict[@"url"]];
+        iconURL = [NSURL URLWithString:dataDict[@"icon"]];
+    }
+    
+    if (cellText) {
+        [cell.repoLabel setText:cellText];
+        [cell.repoLabel setTextColor:[UIColor cellPrimaryTextColor]];
+    }
+    else {
+        cell.repoLabel.text = nil;
+    }
+    if (repoURL) {
+        [cell.urlLabel setText:repoURL.absoluteString];
+        [cell.urlLabel setTextColor:[UIColor cellSecondaryTextColor]];
+    }
+    else {
+        cell.urlLabel.text = nil;
+    }
+    [cell.iconImageView sd_setImageWithURL:iconURL placeholderImage:[UIImage imageNamed:@"Unknown"]];
+    
+    return cell;
 }
 
-- (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section {
-    UIView *view = [[UIView alloc] initWithFrame:CGRectMake(0, 0, tableView.frame.size.width, 0)];
-    UILabel *label = [[UILabel alloc] initWithFrame:CGRectMake(20, 0, tableView.frame.size.width - 10, 18)];
-    [view setBackgroundColor:[UIColor tableViewBackgroundColor]];
-    [label setFont:[UIFont boldSystemFontOfSize:15]];
-    [label setText:[self headerTextForSection:section]];
-    [label setTextColor:[UIColor cellPrimaryTextColor]];
-    [view addSubview:label];
-    label.translatesAutoresizingMaskIntoConstraints = NO;
-    [view addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|-16-[label]-10-|" options:0 metrics:nil views:NSDictionaryOfVariableBindings(label)]];
-    [view addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:[label]-5-|" options:0 metrics:nil views:NSDictionaryOfVariableBindings(label)]];
-    return view;
+- (void)tableView:(UITableView *)tableView willDisplayHeaderView:(UIView *)view forSection:(NSInteger)section {
+    UITableViewHeaderFooterView *header = (UITableViewHeaderFooterView *)view;
+    header.textLabel.font = [UIFont boldSystemFontOfSize:15];
+    header.textLabel.textColor = [UIColor cellPrimaryTextColor];
+    header.tintColor = [UIColor clearColor];
+    [(UIView *)[header valueForKey:@"_backgroundView"] setBackgroundColor:[UIColor clearColor]];
 }
 
-
-- (NSString *)headerTextForSection:(NSInteger)section {
+- (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
     switch (section) {
         case 0:
-            return @"复制源到斑马";
-            break;
+            return @"快速转移复制源";
         case 1:
-            return @"越狱所必备的源一件复制过来";
+            return @"越狱所需要的源";
         case 2:
-            return @"常见推荐源";
+            return @"推荐源";
         default:
             return nil;
-            break;
     }
 }
 
@@ -261,7 +202,6 @@ enum ZBSourcesOrder {
             break;
         case ZBCommunity: {
             NSDictionary *dict = [communityRepos objectAtIndex:indexPath.row];
-            NSLog(@"Afdaf  %@", dict[@"clickLink"]);
             [self addReposWithText:dict[@"clickLink"]];
             break;
         }
@@ -269,7 +209,7 @@ enum ZBSourcesOrder {
         default:
             break;
     }
-    [tableView deselectRowAtIndexPath:indexPath animated:TRUE];
+    [tableView deselectRowAtIndexPath:indexPath animated:YES];
 }
 
 - (void)presentConsole {
@@ -278,11 +218,10 @@ enum ZBSourcesOrder {
     [self presentViewController:console animated:true completion:nil];
 }
 
-
 #pragma mark Add Repos
 
 - (void)addReposWithText:(NSString *)text {
-    UIAlertController *wait = [UIAlertController alertControllerWithTitle:@"请稍等..." message:@"验证软件源中... ...(s)" preferredStyle:UIAlertControllerStyleAlert];
+    UIAlertController *wait = [UIAlertController alertControllerWithTitle:@"请稍等..." message:@"验证软件源中(s)" preferredStyle:UIAlertControllerStyleAlert];
     [self presentViewController:wait animated:true completion:nil];
     
     __weak typeof(self) weakSelf = self;

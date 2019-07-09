@@ -84,7 +84,7 @@
         [webView loadRequest:request];
     }
     else {
-        self.title = @"首页";
+        self.title = @"Home";
         NSURL *url = [[NSBundle mainBundle] URLForResource:@"home" withExtension:@".html"];
         [webView loadFileURL:url allowingReadAccessToURL:[url URLByDeletingLastPathComponent]];
     }

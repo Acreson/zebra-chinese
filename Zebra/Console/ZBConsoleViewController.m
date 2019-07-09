@@ -36,7 +36,7 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
 
-    [self setTitle:@"控制台"];
+    [self setTitle:@"Console"];
     [self.navigationController.navigationBar setBarStyle:UIBarStyleBlack];
     [self.navigationItem setHidesBackButton:true animated:true];
     
@@ -52,7 +52,7 @@
     _progressView.hidden = YES;
     _progressText.text = nil;
     _progressText.hidden = YES;
-    UIBarButtonItem *cancelButton = [[UIBarButtonItem alloc] initWithTitle:@"取消" style:UIBarButtonItemStylePlain target:self action:@selector(cancel)];
+    UIBarButtonItem *cancelButton = [[UIBarButtonItem alloc] initWithTitle:@"Cancel" style:UIBarButtonItemStylePlain target:self action:@selector(cancel)];
     self.navigationItem.leftBarButtonItem = cancelButton;
 }
 
@@ -80,7 +80,7 @@
 - (void)downloadPackages {
     NSArray *packages = [queue packagesToDownload];
     
-    [self writeToConsole:@"下载包中... ...\n" atLevel:ZBLogLevelInfo];
+    [self writeToConsole:@"Downloading Packages.\n" atLevel:ZBLogLevelInfo];
     downloadManager = [[ZBDownloadManager alloc] init];
     downloadManager.downloadDelegate = self;
     
@@ -144,7 +144,7 @@
     }
     else {
         if (continueWithActions) {
-            _progressText.text = @"执行操作中...";
+            _progressText.text = @"Performing actions...";
             self.navigationItem.leftBarButtonItem = nil;
             NSOrderedSet *actions = [queue tasks:debs];
             
@@ -237,11 +237,11 @@
     }
     
     if (needsIconCacheUpdate) {
-        [self writeToConsole:@"刷新图标缓存中...\n" atLevel:ZBLogLevelInfo];
+        [self writeToConsole:@"Updating icon cache...\n" atLevel:ZBLogLevelInfo];
         NSMutableArray *arguments = [NSMutableArray new];
         if ([uicaches count] + [bundlePaths count] > 1) {
             [arguments addObject:@"-a"];
-            [self writeToConsole:@"这可能需要一段时间，斑马可能会崩溃。如果是这样也没关系。\n" atLevel:ZBLogLevelWarning];
+            [self writeToConsole:@"This may take awhile and Zebra may crash. It is okay if it does.\n" atLevel:ZBLogLevelWarning];
         }
         else {
             [arguments addObject:@"-p"];
@@ -258,7 +258,7 @@
             [ZBDevice uicache:arguments observer:self];
         }
         else {
-            [self writeToConsole:@"刷新图标缓存不适合模拟器\n" atLevel:ZBLogLevelWarning];
+            [self writeToConsole:@"uicache is not available on the simulator\n" atLevel:ZBLogLevelWarning];
         }
     }
     
@@ -272,17 +272,17 @@
         if (self->needsRespring) {
             [self addCloseButton];
             
-            [self->_completeButton setTitle:@"注销" forState:UIControlStateNormal];
+            [self->_completeButton setTitle:@"Restart SpringBoard" forState:UIControlStateNormal];
             [self->_completeButton addTarget:self action:@selector(restartSpringBoard) forControlEvents:UIControlEventTouchUpInside];
         }
         else {
-            [self->_completeButton setTitle:@"完成" forState:UIControlStateNormal];
+            [self->_completeButton setTitle:@"Done" forState:UIControlStateNormal];
         }
     });
 }
 
 - (void)addCloseButton {
-    UIBarButtonItem *closeButton = [[UIBarButtonItem alloc] initWithTitle:@"关闭" style:UIBarButtonItemStylePlain target:self action:@selector(goodbye)];
+    UIBarButtonItem *closeButton = [[UIBarButtonItem alloc] initWithTitle:@"Close" style:UIBarButtonItemStylePlain target:self action:@selector(goodbye)];
     self.navigationController.navigationBar.tintColor = [UIColor whiteColor];
     self.navigationItem.rightBarButtonItem = closeButton;
 }
@@ -334,28 +334,28 @@
     switch (s) {
         case 0:
             stage = 0;
-            [self setTitle:@"安装中......"];
-            [self writeToConsole:@"安装软件包中......\n" atLevel:ZBLogLevelInfo];
+            [self setTitle:@"Installing"];
+            [self writeToConsole:@"Installing Packages...\n" atLevel:ZBLogLevelInfo];
             break;
         case 1:
             stage = 1;
-            [self setTitle:@"移除中......"];
-            [self writeToConsole:@"移除软件包中......\n" atLevel:ZBLogLevelInfo];
+            [self setTitle:@"Removing"];
+            [self writeToConsole:@"Removing Packages...\n" atLevel:ZBLogLevelInfo];
             break;
         case 2:
             stage = 2;
-            [self setTitle:@"重装中......"];
-            [self writeToConsole:@"重装软件包中......\n" atLevel:ZBLogLevelInfo];
+            [self setTitle:@"Reinstalling"];
+            [self writeToConsole:@"Reinstalling Packages...\n" atLevel:ZBLogLevelInfo];
             break;
         case 3:
             stage = 3;
-            [self setTitle:@"更新中......"];
-            [self writeToConsole:@"更新软件包中......\n" atLevel:ZBLogLevelInfo];
+            [self setTitle:@"Upgrading"];
+            [self writeToConsole:@"Upgrading Packages...\n" atLevel:ZBLogLevelInfo];
             break;
         case 4:
             stage = 4;
-            [self setTitle:@"完成!"];
-            [self writeToConsole:@"完成!\n" atLevel:ZBLogLevelInfo];
+            [self setTitle:@"Done!"];
+            [self writeToConsole:@"Done!\n" atLevel:ZBLogLevelInfo];
             break;
 
         default:
@@ -381,11 +381,11 @@
     if (data.length) {
         [fh waitForDataInBackgroundAndNotify];
         NSString *str = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-        if ([str rangeOfString:@"警告"].location != NSNotFound) {
+        if ([str rangeOfString:@"warning"].location != NSNotFound) {
             str = [str stringByReplacingOccurrencesOfString:@"dpkg: " withString:@""];
             [self writeToConsole:str atLevel:ZBLogLevelWarning];
         }
-        else if ([str rangeOfString:@"错误"].location != NSNotFound) {
+        else if ([str rangeOfString:@"error"].location != NSNotFound) {
             str = [str stringByReplacingOccurrencesOfString:@"dpkg: " withString:@""];
             [self writeToConsole:str atLevel:ZBLogLevelError];
         }
@@ -447,7 +447,7 @@
     }
     totalProgress /= downloadingMap.count;
     [_progressView setProgress:totalProgress animated:YES];
-    _progressText.text = [NSString stringWithFormat:@"下载中: %.1f%%", totalProgress * 100];
+    _progressText.text = [NSString stringWithFormat:@"Downloading: %.1f%%", totalProgress * 100];
 }
 
 - (void)predator:(nonnull ZBDownloadManager *)downloadManager finishedAllDownloads:(nonnull NSDictionary *)filenames {
@@ -457,7 +457,7 @@
 }
 
 - (void)predator:(nonnull ZBDownloadManager *)downloadManager startedDownloadForFile:(nonnull NSString *)filename {
-    [self writeToConsole:[NSString stringWithFormat:@"下载中 %@\n", filename] atLevel:ZBLogLevelDescript];
+    [self writeToConsole:[NSString stringWithFormat:@"Downloading %@\n", filename] atLevel:ZBLogLevelDescript];
 }
 
 - (void)predator:(nonnull ZBDownloadManager *)downloadManager finishedDownloadForFile:(nonnull NSString *)filename withError:(NSError * _Nullable)error {
@@ -466,18 +466,18 @@
         [self writeToConsole:[error.localizedDescription stringByAppendingString:@"\n"] atLevel:ZBLogLevelError];
     }
     else if (filename) {
-        [self writeToConsole:[NSString stringWithFormat:@"完成 %@\n", filename] atLevel:ZBLogLevelDescript];
+        [self writeToConsole:[NSString stringWithFormat:@"Done %@\n", filename] atLevel:ZBLogLevelDescript];
     }
 }
 
 #pragma mark - Database Delegate
 
 - (void)databaseStartedUpdate {
-    [self writeToConsole:@"导入包中.\n" atLevel:ZBLogLevelInfo];
+    [self writeToConsole:@"Importing local packages.\n" atLevel:ZBLogLevelInfo];
 }
 
 - (void)databaseCompletedUpdate:(int)packageUpdates {
-    [self writeToConsole:@"导入完成.\n" atLevel:ZBLogLevelInfo];
+    [self writeToConsole:@"Finished importing local packages.\n" atLevel:ZBLogLevelInfo];
     
     NSLog(@"[Zebra] %d updates available.", packageUpdates);
     

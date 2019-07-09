@@ -17,7 +17,6 @@
 #import <Repos/Helpers/ZBRepo.h>
 #import <Packages/Views/ZBPackageTableViewCell.h>
 #import <UIColor+GlobalColors.h>
-#import <UITableViewHeaderFooterView.h>
 
 typedef enum {
     ZBSortingTypeABC,
@@ -173,7 +172,7 @@ typedef enum {
     dispatch_async(dispatch_get_main_queue(), ^{
         if (self.continueBatchLoad) {
             if (self->totalNumberOfPackages) {
-                UIBarButtonItem *loadButton = [[UIBarButtonItem alloc] initWithTitle:[NSString stringWithFormat:@"%.0f%% Loaded", MIN(100, (double)(self->numberOfPackages * 100) / self->totalNumberOfPackages)] style:UIBarButtonItemStylePlain target:self action:@selector(loadNextPackages)];
+                UIBarButtonItem *loadButton = [[UIBarButtonItem alloc] initWithTitle:[NSString stringWithFormat:@"%.0f%% 加载完成", MIN(100, (double)(self->numberOfPackages * 100) / self->totalNumberOfPackages)] style:UIBarButtonItemStylePlain target:self action:@selector(loadNextPackages)];
                 self.navigationItem.rightBarButtonItem = loadButton;
             }
         }
@@ -352,9 +351,7 @@ typedef enum {
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     ZBPackageTableViewCell *cell = (ZBPackageTableViewCell *)[tableView dequeueReusableCellWithIdentifier:@"packageTableViewCell" forIndexPath:indexPath];
-    cell.packageLabel.textColor = [UIColor cellPrimaryTextColor];
-    cell.descriptionLabel.textColor = [UIColor cellSecondaryTextColor];
-    cell.backgroundContainerView.backgroundColor = [UIColor cellBackgroundColor];
+    [cell setColors];
     return cell;
 }
 
@@ -368,7 +365,7 @@ typedef enum {
         header.textLabel.font = [UIFont boldSystemFontOfSize:15];
         header.textLabel.textColor = [UIColor cellPrimaryTextColor];
         header.tintColor = [UIColor clearColor];
-        [header _setBackgroundViewColor:[UIColor clearColor]];
+        [(UIView *)[header valueForKey:@"_backgroundView"] setBackgroundColor:[UIColor clearColor]];
     }
 }
 

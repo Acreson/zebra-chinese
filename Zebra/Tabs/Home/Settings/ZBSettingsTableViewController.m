@@ -44,7 +44,7 @@ enum ZBSectionOrder {
     [super viewDidLoad];
     self.navigationItem.title = @"设置";
     self.headerView.image = [UIImage imageNamed:@"banner"];
-    self.headerView.clipsToBounds = TRUE;
+    self.headerView.clipsToBounds = YES;
     [self.tableView setBackgroundColor:[UIColor tableViewBackgroundColor]];
     [self configureNavBar];
     [self configureTitleLabel];
@@ -53,37 +53,11 @@ enum ZBSectionOrder {
 }
 
 - (void)viewWillAppear:(BOOL)animated {
-    [super viewWillAppear:TRUE];
+    [super viewWillAppear:YES];
     [self.tableView reloadData];
     [self.tableView setSeparatorColor:[UIColor cellSeparatorColor]];
     [self configureNavBar];
 }
-
-- (void)viewDidAppear:(BOOL)animated {
-    [super viewDidAppear:animated];
-    /*[UIView animateWithDuration:0.5 delay:0 usingSpringWithDamping:1 initialSpringVelocity:1 options:UIViewAnimationOptionTransitionNone animations:^{
-        //[self setupStatusBlur];
-        [self scrollViewDidScroll:self.tableView];
-    } completion:nil];*/
-}
-
-- (void)viewWillDisappear:(BOOL)animated {
-    [super viewWillDisappear:TRUE];
-    /*[self.blurView removeFromSuperview];
-    [self.navigationController setClear:FALSE];
-    [self.navigationController setOpacity:1];
-    [self.navigationController.navigationBar setBarStyle:[UINavigationBar appearance].barStyle];
-    [self.navigationController.navigationBar setTintColor:[UIColor tintColor]];
-    [self.navigationController.navigationBar setBarTintColor:[UINavigationBar appearance].barTintColor];
-    [self.navigationController.navigationBar setBackgroundColor:[UINavigationBar appearance].backgroundColor];*/
-}
-
-/*- (void)setupStatusBlur {
-    UIBlurEffect *blurEffect = [UIBlurEffect effectWithStyle:[ZBDevice darkModeEnabled] ? UIBlurEffectStyleDark : UIBlurEffectStyleLight];
-    self.blurView = [[UIVisualEffectView alloc] initWithEffect:blurEffect];
-    self.blurView.frame = [[UIApplication sharedApplication] statusBarFrame];
-    [[[UIApplication sharedApplication] keyWindow] addSubview:self.blurView];
-}*/
 
 - (void)configureSelectedTint {
     NSNumber *number = [[NSUserDefaults standardUserDefaults] objectForKey:@"tintSelection"];
@@ -98,7 +72,7 @@ enum ZBSectionOrder {
     [self.navigationController.navigationBar setBackgroundColor:[UIColor tableViewBackgroundColor]];
     [self.navigationController.navigationBar setBarTintColor:[UIColor tableViewBackgroundColor]];
     [self.navigationController.navigationBar setShadowImage:[UIImage new]];
-    //[self.navigationController.navigationBar setTranslucent:TRUE];
+    //[self.navigationController.navigationBar setTranslucent:YES];
     //[self.navigationController.navigationBar setBarStyle:[ZBDevice darkModeEnabled] ? UIBarStyleBlack : UIBarStyleDefault];
     [self.navigationController.navigationBar setTintColor:[UIColor tintColor]];
     [self.navigationController.navigationBar setTitleTextAttributes:@{NSForegroundColorAttributeName:[UIColor cellPrimaryTextColor]}];
@@ -106,13 +80,13 @@ enum ZBSectionOrder {
 
 - (void)configureTitleLabel {
     NSString *versionString = [NSString stringWithFormat:@"版本: %@", PACKAGE_VERSION];
-    NSMutableAttributedString *titleString = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:@"Zebra\n%@", versionString]];
+    NSMutableAttributedString *titleString = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:@"斑马\n%@", versionString]];
     [titleString addAttributes:@{NSFontAttributeName : [UIFont fontWithName:@".SFUIDisplay-Medium" size:36], NSForegroundColorAttributeName: [UIColor whiteColor]} range:NSMakeRange(0,5)];
     [titleString addAttributes:@{NSFontAttributeName : [UIFont fontWithName:@".SFUIDisplay-Medium" size:26], NSForegroundColorAttributeName: [[UIColor whiteColor] colorWithAlphaComponent:0.85]} range:[titleString.string rangeOfString:versionString]];
     [self.titleLabel setAttributedText:titleString];
     [self.titleLabel setTextAlignment:NSTextAlignmentNatural];
     [self.titleLabel setNumberOfLines:0];
-    [self.titleLabel setTranslatesAutoresizingMaskIntoConstraints:FALSE];
+    [self.titleLabel setTranslatesAutoresizingMaskIntoConstraints:NO];
     self.titleLabel.layer.shouldRasterize = YES;
     self.titleLabel.layer.shadowColor = [UIColor blackColor].CGColor;
     self.titleLabel.layer.shadowOffset = CGSizeMake(0.0, 0.0);
@@ -121,7 +95,7 @@ enum ZBSectionOrder {
 }
 
 - (IBAction)closeButtonTapped:(UIBarButtonItem *)sender {
-    [self dismissViewControllerAnimated:TRUE completion:nil];
+    [self dismissViewControllerAnimated:YES completion:nil];
 }
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
@@ -140,7 +114,7 @@ enum ZBSectionOrder {
             return @"信息";
             break;
         case ZBGraphics:
-            return @"图标";
+            return @"图形";
             break;
         case ZBAdvanced:
             return @"增加";
@@ -229,7 +203,7 @@ enum ZBSectionOrder {
             cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cellIdentifier];
         }
         if (indexPath.row == ZBChangeIcon) {
-            cell.textLabel.text = @"变换图标";
+            cell.textLabel.text = @"更改图标";
             if (@available(iOS 10.3, *)) {
                 if ([[UIApplication sharedApplication] alternateIconName]) {
                     cell.imageView.image = [UIImage imageNamed:[[UIApplication sharedApplication] alternateIconName]];
@@ -272,7 +246,7 @@ enum ZBSectionOrder {
             segmentedControl.center = CGPointMake(cell.contentView.bounds.size.width / 2, cell.contentView.bounds.size.height / 2);
             [cell.contentView addSubview:segmentedControl];*/
             cell.accessoryView = segmentedControl;
-            cell.textLabel.text = @"字体/线条颜色";
+            cell.textLabel.text = @"色调";
         } else if (indexPath.row == ZBOledSwitch) {
             [cell.contentView.subviews makeObjectsPerformSelector: @selector(removeFromSuperview)];
             UISwitch *darkSwitch = [[UISwitch alloc] initWithFrame:CGRectZero];
@@ -280,7 +254,7 @@ enum ZBSectionOrder {
             [darkSwitch addTarget:self action:@selector(toggleOledDarkMode:) forControlEvents:UIControlEventValueChanged];
             [darkSwitch setOnTintColor:[UIColor tintColor]];
             cell.accessoryView = darkSwitch;
-            cell.textLabel.text = @"OLED设备专用暗黑模式";
+            cell.textLabel.text = @"OLED专用暗黑模式";
         }
         [cell.textLabel setTextColor:[UIColor cellPrimaryTextColor]];
         return cell;
@@ -295,11 +269,11 @@ enum ZBSectionOrder {
         }
         NSString *text;
         if (indexPath.row == ZBDropTables) {
-            text = @"快速刷新列表";
+            text = @"快速刷新源库";
         } else if (indexPath.row == ZBOpenDocs){
             text = @"打开文档目录";
         } else if (indexPath.row == ZBClearImageCache) {
-            text = @"清除图像缓存";
+            text = @"清除图标缓存";
         } else if (indexPath.row == ZBClearKeychain){
             text = @"清除账户密钥";
         }
@@ -349,7 +323,7 @@ enum ZBSectionOrder {
             }
             break;
     }
-    [tableView deselectRowAtIndexPath:indexPath animated:TRUE];
+    [tableView deselectRowAtIndexPath:indexPath animated:YES];
 }
 
 
@@ -427,7 +401,7 @@ enum ZBSectionOrder {
         ZBAlternateIconController *altIcon = [storyboard instantiateViewControllerWithIdentifier:@"alternateIconController"];
         [self.navigationController.navigationBar setBackgroundColor:[UIColor tableViewBackgroundColor]];
         [self.navigationController.navigationBar setBarTintColor:[UIColor tableViewBackgroundColor]];
-        [self.navigationController pushViewController:altIcon animated:TRUE];
+        [self.navigationController pushViewController:altIcon animated:YES];
     }
 }
 

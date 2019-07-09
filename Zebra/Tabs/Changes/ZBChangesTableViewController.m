@@ -7,7 +7,6 @@
 //
 
 #import <ZBAppDelegate.h>
-#import <UITableViewHeaderFooterView.h>
 #import "ZBChangesTableViewController.h"
 #import <Database/ZBDatabaseManager.h>
 #import <Packages/Helpers/ZBPackage.h>
@@ -156,7 +155,7 @@
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     ZBPackageTableViewCell *cell = (ZBPackageTableViewCell *)[tableView dequeueReusableCellWithIdentifier:@"packageTableViewCell" forIndexPath:indexPath];
-    
+    [cell setColors];
     return cell;
 }
 
@@ -169,7 +168,7 @@
     header.textLabel.font = [UIFont boldSystemFontOfSize:15];
     header.textLabel.textColor = [UIColor cellPrimaryTextColor];
     header.tintColor = [UIColor clearColor];
-    [header _setBackgroundViewColor:[UIColor clearColor]];
+    [(UIView *)[header valueForKey:@"_backgroundView"] setBackgroundColor:[UIColor clearColor]];
 }
 
 #pragma mark - Swipe actions
@@ -210,14 +209,12 @@
 }
 
 - (UIViewController *)previewingContext:(id<UIViewControllerPreviewing>)previewingContext viewControllerForLocation:(CGPoint)location {
-    NSIndexPath *indexPath = [self.tableView
-                              indexPathForRowAtPoint:location];
+    NSIndexPath *indexPath = [self.tableView indexPathForRowAtPoint:location];
     
     ZBPackageTableViewCell *cell = [self.tableView cellForRowAtIndexPath:indexPath];
     previewingContext.sourceRect = cell.frame;
     
     ZBPackageDepictionViewController *packageDepictionVC = (ZBPackageDepictionViewController*)[self.storyboard instantiateViewControllerWithIdentifier:@"packageDepictionVC"];
-    
     
     [self setDestinationVC:indexPath destination:packageDepictionVC];
     
