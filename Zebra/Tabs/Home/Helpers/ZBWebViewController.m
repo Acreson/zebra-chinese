@@ -134,7 +134,10 @@
         if (type != -1 && ([[url scheme] isEqualToString:@"http"] || [[url scheme] isEqualToString:@"https"])) {
             SFSafariViewController *sfVC = [[SFSafariViewController alloc] initWithURL:url];
             if (@available(iOS 10.0, *)) {
-                sfVC.preferredControlTintColor = [UIColor tintColor];
+                [sfVC setPreferredBarTintColor:[UIColor tableViewBackgroundColor]];
+                [sfVC setPreferredControlTintColor:[UIColor tintColor]];
+            } else {
+                [sfVC.view setTintColor:[UIColor tintColor]];
             }
             [self presentViewController:sfVC animated:true completion:nil];
             decisionHandler(WKNavigationActionPolicyCancel);
@@ -279,7 +282,7 @@
                 [self presentViewController:controller animated:true completion:nil];
             }
             else {
-                UIAlertController *controller = [UIAlertController alertControllerWithTitle:@"Error" message:@"This action is not supported on non-jailbroken devices" preferredStyle:UIAlertControllerStyleAlert];
+                UIAlertController *controller = [UIAlertController alertControllerWithTitle:@"错误" message:@"This action is not supported on non-jailbroken devices" preferredStyle:UIAlertControllerStyleAlert];
                 
                 UIAlertAction *ok = [UIAlertAction actionWithTitle:@"😢" style:UIAlertActionStyleDefault handler:NULL];
                 
@@ -404,12 +407,12 @@
 }
 
 - (IBAction)refreshPage:(id)sender {
-    [self hapticButton];
+    [ZBDevice hapticButton];
     [webView reload];
 }
 
 - (IBAction)toggleDarkMode:(id)sender {
-    [self hapticButton];
+    [ZBDevice hapticButton];
     [UIView animateWithDuration:0.5 delay:0 usingSpringWithDamping:1 initialSpringVelocity:1 options:UIViewAnimationOptionCurveEaseInOut animations:^{
         if (![ZBDevice darkModeEnabled]) {
             //Want Dark mode
@@ -419,17 +422,6 @@
             [self lightMode];
         }
     } completion:nil];
-}
-
-- (void)hapticButton {
-    if (@available(iOS 10.0, *)) {
-        UISelectionFeedbackGenerator *feedback = [[UISelectionFeedbackGenerator alloc] init];
-        [feedback prepare];
-        [feedback selectionChanged];
-        feedback = nil;
-    } else {
-        return;// Fallback on earlier versions
-    }
 }
 
 - (void)darkMode {
@@ -470,7 +462,7 @@
         [webView loadRequest:request];
     }
     else {
-        self.title = @"Home";
+        self.title = @"首页";
         NSURL *url = [[NSBundle mainBundle] URLForResource:@"home" withExtension:@".html"];
         [webView loadFileURL:url allowingReadAccessToURL:[url URLByDeletingLastPathComponent]];
         

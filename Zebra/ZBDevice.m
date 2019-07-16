@@ -9,6 +9,7 @@
 #import "ZBDevice.h"
 #import <Extensions/UIColor+GlobalColors.h>
 #import <WebKit/WebKit.h>
+#import <Queue/ZBQueue.h>
 #import "ZBAppDelegate.h"
 #import "MobileGestalt.h"
 #import <UIKit/UIDevice.h>
@@ -18,6 +19,7 @@
 #import <sys/types.h>
 #import <sys/stat.h>
 #import <unistd.h>
+@import SafariServices;
 
 @implementation ZBDevice
 
@@ -25,51 +27,94 @@
 #if TARGET_OS_SIMULATOR
     return YES;
 #else
-    return ![[NSFileManager defaultManager] fileExistsAtPath:@"/usr/libexec/zebra/supersling"];
+    static BOOL value = NO;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        value = ![[NSFileManager defaultManager] fileExistsAtPath:@"/usr/libexec/zebra/supersling"];
+    });
+    return value;
 #endif
 }
 
 + (NSString *)UDID {
-    CFStringRef udidCF = (CFStringRef)MGCopyAnswer(kMGUniqueDeviceID);
-    NSString *udid = (__bridge NSString *)udidCF;
-    if (udid == NULL) {
-        // send a fake UDID in case this is a simulator
-        udid = [[[UIDevice currentDevice] identifierForVendor] UUIDString];
-    }
+    static NSString *udid = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        CFStringRef udidCF = (CFStringRef)MGCopyAnswer(kMGUniqueDeviceID);
+        udid = (__bridge NSString *)udidCF;
+        if (udid == NULL) {
+            // send a fake UDID in case this is a simulator
+            udid = [[[UIDevice currentDevice] identifierForVendor] UUIDString];
+        }
+    });
     return udid;
 }
 
 + (NSString *)deviceModelID {
-    struct utsname systemInfo;
-    uname(&systemInfo);
-    return [NSString stringWithCString:systemInfo.machine encoding:NSUTF8StringEncoding];
+    static NSString *modelID = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        struct utsname systemInfo;
+        uname(&systemInfo);
+        modelID = [NSString stringWithCString:systemInfo.machine encoding:NSUTF8StringEncoding];
+    });
+    return modelID;
 }
 
 + (NSString *)machineID {
-    size_t size;
-    sysctlbyname("hw.machine", NULL, &size, NULL, 0);
-    char *answer = malloc(size);
-    sysctlbyname("hw.machine", answer, &size, NULL, 0);
-    NSString *machineIdentifier = [NSString stringWithCString:answer encoding: NSUTF8StringEncoding];
-    free(answer);
+    static NSString *machineIdentifier = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        size_t size;
+        sysctlbyname("hw.machine", NULL, &size, NULL, 0);
+        char *answer = malloc(size);
+        sysctlbyname("hw.machine", answer, &size, NULL, 0);
+        machineIdentifier = [NSString stringWithCString:answer encoding: NSUTF8StringEncoding];
+        free(answer);
+    });
     return machineIdentifier;
+}
+
++ (void)hapticButton {
+    if (@available(iOS 10.0, *)) {
+        UISelectionFeedbackGenerator *feedback = [[UISelectionFeedbackGenerator alloc] init];
+        [feedback prepare];
+        [feedback selectionChanged];
+        feedback = nil;
+    }
+}
+
++ (void)asRoot:(NSTask *)task arguments:(NSArray *)arguments {
+    NSString *launchPath = task.launchPath;
+    [task setLaunchPath:@"/usr/libexec/zebra/supersling"];
+    NSArray *trueArguments = @[launchPath];
+    if (arguments) {
+        trueArguments = [trueArguments arrayByAddingObjectsFromArray:arguments];
+    }
+    [task setArguments:trueArguments];
 }
 
 + (void)sbreload {
     if (![self needsSimulation]) {
         NSTask *task = [[NSTask alloc] init];
         BOOL hasSbreload = [[NSFileManager defaultManager] fileExistsAtPath:@"/usr/bin/sbreload"];
+        BOOL execed = NO;
         if (hasSbreload) {
             [task setLaunchPath:@"/usr/bin/sbreload"];
-            [task launch];
-            [task waitUntilExit];
+            [self asRoot:task arguments:nil];
+            if (![task isRunning]) {
+                [task launch];
+                [task waitUntilExit];
+            } else {
+                execed = YES;
+            }
         }
         
-        if (!hasSbreload || [task terminationStatus] != 0) {
+        if (!hasSbreload || execed || [task terminationStatus] != 0) {
             NSLog(@"[Zebra] SBReload Failed. Trying to restart backboardd");
             //Ideally, this is only if sbreload fails
-            [task setLaunchPath:@"/usr/libexec/zebra/supersling"];
-            [task setArguments:@[@"/bin/launchctl", @"stop", @"com.apple.backboardd"]];
+            [task setLaunchPath:@"/bin/launchctl"];
+            [self asRoot:task arguments:@[@"stop", @"com.apple.backboardd"]];
             
             [task launch];
         }
@@ -79,8 +124,8 @@
 + (void)uicache:(NSArray *)arguments observer:(NSObject <ZBConsoleCommandDelegate> *)observer {
     if (![self needsSimulation]) {
         NSTask *task = [[NSTask alloc] init];
-        [task setLaunchPath:@"/usr/libexec/zebra/supersling"];
-        [task setArguments:[@[@"/usr/bin/uicache"] arrayByAddingObjectsFromArray:arguments]];
+        [task setLaunchPath:@"/usr/bin/uicache"];
+        //[self asRoot:task arguments:arguments];
         
         if (observer) {
             NSPipe *outputPipe = [[NSPipe alloc] init];
@@ -113,15 +158,30 @@
 }
 
 + (BOOL)isChimera {
-    return [self needsSimulation] ? NO : [self _isRegularDirectory:"/chimera"];
+    static BOOL value = NO;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        value = [self needsSimulation] ? NO : [self _isRegularDirectory:"/chimera"];
+    });
+    return value;
 }
 
 + (BOOL)isElectra {
-    return [self needsSimulation] ? NO : [self _isRegularDirectory:"/electra"];
+    static BOOL value = NO;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        value = [self needsSimulation] ? NO : [self _isRegularDirectory:"/electra"];
+    });
+    return value;
 }
 
 + (BOOL)isUncover {
-    return [self needsSimulation] ? NO : [self _isRegularFile:"/.installed_unc0ver"];
+    static BOOL value = NO;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        value = [self needsSimulation] ? NO : [self _isRegularFile:"/.installed_unc0ver"];
+    });
+    return value;
 }
 
 + (NSString * _Nonnull)deviceType {
@@ -142,6 +202,10 @@
     return [[NSUserDefaults standardUserDefaults] boolForKey:@"oledMode"];
 }
 
++ (BOOL)darkModeThirteenEnabled {
+    return [[NSUserDefaults standardUserDefaults] boolForKey:@"thirteenMode"];
+}
+
 + (void)setDarkModeEnabled:(BOOL)enabled {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [defaults setBool:enabled forKey:@"darkMode"];
@@ -149,40 +213,57 @@
 }
 
 + (void)configureDarkMode {
+    // Navigation bar
     [[UINavigationBar appearance] setTintColor:[UIColor tintColor]];
     [[UINavigationBar appearance] setTitleTextAttributes:@{NSForegroundColorAttributeName:[UIColor cellPrimaryTextColor]}];
     //[[UINavigationBar appearance] setShadowImage:[UIImage new]];
     if (@available(iOS 11.0, *)) {
         [[UINavigationBar appearance] setLargeTitleTextAttributes:@{NSForegroundColorAttributeName:[UIColor cellPrimaryTextColor]}];
     }
-    [[UINavigationBar appearance] setBarTintColor:[UIColor tableViewBackgroundColor]];
-    [[UINavigationBar appearance] setBackgroundColor:[UIColor tableViewBackgroundColor]];
-    [[UINavigationBar appearance] setTranslucent:NO];
+    if ([ZBDevice darkModeOledEnabled]){
+        [[UINavigationBar appearance] setBackgroundColor:[UIColor tableViewBackgroundColor]];
+        [[UINavigationBar appearance] setTranslucent:NO];
+    } else {
+        [[UINavigationBar appearance] setBackgroundColor:nil];
+        [[UINavigationBar appearance] setTranslucent:YES];
+    }
+    
     //Status bar
     [[UINavigationBar appearance] setBarStyle:UIBarStyleBlack];
     
     //Tab
     [[UITabBar appearance] setTintColor:[UIColor tintColor]];
-    [[UITabBar appearance] setBackgroundColor:[UIColor tableViewBackgroundColor]];
-    [[UITabBar appearance] setBarTintColor:[UIColor tableViewBackgroundColor]];
-    [[UITabBar appearance] setTranslucent:NO];
+    [[UITabBar appearance] setBackgroundColor:nil];
+    [[UITabBar appearance] setBarTintColor:nil];
+    if ([ZBDevice darkModeOledEnabled]){
+        [[UITabBar appearance] setTranslucent:NO];
+    } else {
+        [[UITabBar appearance] setTranslucent:YES];
+    }
     //[[UITabBar appearance] setShadowImage:[UIImage new]];
     [[UITabBar appearance] setBarStyle:UIBarStyleBlack];
     
     //Tables
     [[UITableView appearance] setBackgroundColor:[UIColor tableViewBackgroundColor]];
+    [[UITableView appearance] setSeparatorColor:[UIColor cellSeparatorColor]];
     [[UITableView appearance] setTintColor:[UIColor tintColor]];
-    [[UITableView appearance] setSeparatorStyle:UITableViewCellSeparatorStyleNone];
     [[UITableViewCell appearance] setBackgroundColor:[UIColor cellBackgroundColor]];
+    
     UIView *dark = [[UIView alloc] init];
     dark.backgroundColor = [UIColor selectedCellBackgroundColorDark:YES oled:[ZBDevice darkModeOledEnabled]];
     [[UITableViewCell appearance] setSelectedBackgroundView:dark];
     [UILabel appearanceWhenContainedInInstancesOfClasses:@[[UITableViewCell class]]].textColor = [UIColor cellPrimaryTextColor];
+    
+    //Keyboard
+    [[UITextField appearance] setKeyboardAppearance:UIKeyboardAppearanceDark];
+    
+    //Web views
     [[WKWebView appearance] setBackgroundColor:[UIColor tableViewBackgroundColor]];
     [[WKWebView appearance] setOpaque:YES];
 }
 
 + (void)configureLightMode {
+    //Navigation bar
     [[UINavigationBar appearance] setTintColor:[UIColor tintColor]];
     [[UINavigationBar appearance] setTitleTextAttributes:@{NSForegroundColorAttributeName:[UIColor cellPrimaryTextColor]}];
     //[[UINavigationBar appearance] setShadowImage:[UIImage new]];
@@ -191,32 +272,38 @@
     }
     [[UINavigationBar appearance] setBarTintColor:nil];
     [[UINavigationBar appearance] setBackgroundColor:nil];
-    [[UINavigationBar appearance] setTranslucent:NO];
+    [[UINavigationBar appearance] setTranslucent:YES];
     //Status bar
     [[UINavigationBar appearance] setBarStyle:UIBarStyleDefault];
     
     //Tab
     [[UITabBar appearance] setTintColor:[UIColor tintColor]];
     [[UITabBar appearance] setBackgroundColor:nil];
-    [[UITabBar appearance] setBarTintColor:[UIColor tableViewBackgroundColor]];
+    [[UITabBar appearance] setBarTintColor:nil];
     [[UITabBar appearance] setBarStyle:UIBarStyleDefault];
-    [[UITabBar appearance] setTranslucent:NO];
+    [[UITabBar appearance] setTranslucent:YES];
     //[[UITabBar appearance] setShadowImage:[UIImage new]];
     
     //Tables
     [[UITableView appearance] setBackgroundColor:[UIColor tableViewBackgroundColor]];
+    [[UITableView appearance] setTintColor:[UIColor tintColor]];
     [[UITableView appearance] setTintColor:nil];
-    [[UITableView appearance] setSeparatorStyle:UITableViewCellSeparatorStyleNone];
     [[UITableViewCell appearance] setBackgroundColor:[UIColor cellBackgroundColor]];
-    UIView *light = [[UIView alloc] init];
-    light.backgroundColor = [UIColor selectedCellBackgroundColorLight:YES];
-    [[UITableViewCell appearance] setSelectedBackgroundView:light];
+    [[UITableViewCell appearance] setSelectedBackgroundView:nil];
     [UILabel appearanceWhenContainedInInstancesOfClasses:@[[UITableViewCell class]]].textColor = [UIColor cellPrimaryTextColor];
+    
+    //Keyboard
+    [[UITextField appearance] setKeyboardAppearance:UIKeyboardAppearanceDefault];
+    
+    //Web views
     [[WKWebView appearance] setBackgroundColor:[UIColor tableViewBackgroundColor]];
     [[WKWebView appearance] setOpaque:YES];
 }
 
 + (void)applyThemeSettings {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    BOOL useIcon = [defaults boolForKey:@"packageIconAction"];
+    [[ZBQueue sharedInstance] setUseIcon:useIcon];
     if ([self darkModeEnabled]) {
         [self configureDarkMode];
     }

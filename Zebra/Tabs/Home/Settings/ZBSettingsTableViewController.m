@@ -7,6 +7,15 @@
 //
 
 #import "ZBSettingsTableViewController.h"
+#import <Queue/ZBQueue.h>
+
+#define oledModeKey @"oledMode"
+#define tintSelectionKey @"tintSelection"
+#define thirteenModeKey @"thirteenMode"
+#define randomFeaturedKey @"randomFeatured"
+#define wantsFeaturedKey @"wantsFeatured"
+#define wantsNewsKey @"wantsNews"
+#define iconActionKey @"packageIconAction"
 
 enum ZBInfoOrder {
     ZBBugs
@@ -14,8 +23,18 @@ enum ZBInfoOrder {
 
 enum ZBUIOrder {
     ZBChangeTint,
-    ZBOledSwitch,
+    ZBChangeMode,
     ZBChangeIcon
+};
+
+enum ZBFeatureOrder {
+    ZBFeaturedEnable,
+    ZBFeatureOrRandomToggle,
+    ZBFeatureBlacklist
+};
+
+enum ZBPackagesOrder {
+    ZBIconAction
 };
 
 enum ZBAdvancedOrder {
@@ -28,12 +47,16 @@ enum ZBAdvancedOrder {
 enum ZBSectionOrder {
     ZBInfo,
     ZBGraphics,
+    ZBFeatured,
+    ZBNews,
+    ZBPackages,
     ZBAdvanced
 };
 
 @interface ZBSettingsTableViewController () {
     NSMutableDictionary *_colors;
-    ZBTintSelection selectedSortingType;
+    ZBTintSelection tintColorType;
+    ZBModeSelection selectedMode;
 }
 
 @end
@@ -48,8 +71,8 @@ enum ZBSectionOrder {
     [self.tableView setBackgroundColor:[UIColor tableViewBackgroundColor]];
     [self configureNavBar];
     [self configureTitleLabel];
-    [self.tableView setSeparatorStyle:UITableViewCellSeparatorStyleNone];
     [self configureSelectedTint];
+    [self configureSelectedMode];
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -60,19 +83,31 @@ enum ZBSectionOrder {
 }
 
 - (void)configureSelectedTint {
-    NSNumber *number = [[NSUserDefaults standardUserDefaults] objectForKey:@"tintSelection"];
+    NSNumber *number = [[NSUserDefaults standardUserDefaults] objectForKey:tintSelectionKey];
     if (number) {
-        selectedSortingType = (ZBTintSelection)[number integerValue];
-    } else {
-        selectedSortingType = ZBDefaultTint;
+        tintColorType = (ZBTintSelection)[number integerValue];
+    }
+    else {
+        tintColorType = ZBDefaultTint;
+    }
+}
+
+- (void)configureSelectedMode {
+    if ([[NSUserDefaults standardUserDefaults] boolForKey:thirteenModeKey]) {
+        selectedMode = ZBThirteen;
+    }
+    else if ([[NSUserDefaults standardUserDefaults] boolForKey:oledModeKey]) {
+        selectedMode = ZBOled;
+    }
+    else {
+        selectedMode = ZBDefaultMode;
     }
 }
 
 - (void)configureNavBar {
     [self.navigationController.navigationBar setBackgroundColor:[UIColor tableViewBackgroundColor]];
     [self.navigationController.navigationBar setBarTintColor:[UIColor tableViewBackgroundColor]];
-    [self.navigationController.navigationBar setShadowImage:[UIImage new]];
-    //[self.navigationController.navigationBar setTranslucent:YES];
+    [self.navigationController.navigationBar setTranslucent:NO];
     //[self.navigationController.navigationBar setBarStyle:[ZBDevice darkModeEnabled] ? UIBarStyleBlack : UIBarStyleDefault];
     [self.navigationController.navigationBar setTintColor:[UIColor tintColor]];
     [self.navigationController.navigationBar setTitleTextAttributes:@{NSForegroundColorAttributeName:[UIColor cellPrimaryTextColor]}];
@@ -100,7 +135,7 @@ enum ZBSectionOrder {
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
     CGFloat offsetY = scrollView.contentOffset.y;
-    if(offsetY <= 0){
+    if (offsetY <= 0) {
         CGRect frame = self.headerView.frame;
         frame.size.height = self.tableView.tableHeaderView.frame.size.height - scrollView.contentOffset.y;
         frame.origin.y = self.tableView.tableHeaderView.frame.origin.y + scrollView.contentOffset.y;
@@ -108,65 +143,71 @@ enum ZBSectionOrder {
     }
 }
 
-- (NSString *)sectionTitleForSection:(NSInteger)section {
+- (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
     switch (section) {
         case ZBInfo:
             return @"信息";
-            break;
         case ZBGraphics:
             return @"图形";
-            break;
+        case ZBFeatured:
+            return @"特色";
+        case ZBNews:
+            return @"新闻";
+        case ZBPackages:
+            return @"软件";
         case ZBAdvanced:
-            return @"增加";
-            break;
+            return @"操作";
         default:
-            return @"错误";
+            return nil;
     }
 }
 
 #pragma mark - Table view data source
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
-    return 3;
+    return 6;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
     switch (section){
         case ZBInfo:
             return 1;
-            break;
         case ZBGraphics:
             if (@available(iOS 10.3, *)) {
                 return 3;
-            } else {
+            }
+            else {
                 return 2;
             }
-            break;
+        case ZBFeatured:
+            if ([[NSUserDefaults standardUserDefaults] boolForKey:randomFeaturedKey]) {
+                return 3;
+            }
+            else {
+                return 2;
+            }
+        case ZBNews:
+            return 1;
+        case ZBPackages:
+            return 1;
         case ZBAdvanced:
             return 4;
-            break;
         default:
             return 0;
-            break;
     }
 }
 
-- (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section {
-    UIView *view = [[UIView alloc] initWithFrame:CGRectMake(0, 0, tableView.frame.size.width, 0)];
-    UILabel *label = [[UILabel alloc] initWithFrame:CGRectMake(20, 0, tableView.frame.size.width - 10, 18)];
-    [view setBackgroundColor:[UIColor tableViewBackgroundColor]];
-    [label setFont:[UIFont boldSystemFontOfSize:15]];
-    [label setText:[self sectionTitleForSection:section]];
-    [label setTextColor:[UIColor cellPrimaryTextColor]];
-    [view addSubview:label];
-    label.translatesAutoresizingMaskIntoConstraints = NO;
-    [view addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|-16-[label]-10-|" options:0 metrics:nil views:NSDictionaryOfVariableBindings(label)]];
-    [view addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:[label]-5-|" options:0 metrics:nil views:NSDictionaryOfVariableBindings(label)]];
-    return view;
+- (void)tableView:(UITableView *)tableView willDisplayHeaderView:(UIView *)view forSection:(NSInteger)section {
+    UITableViewHeaderFooterView *header = (UITableViewHeaderFooterView *)view;
+    header.backgroundColor = [UIColor tableViewBackgroundColor];
+    header.textLabel.font = [UIFont boldSystemFontOfSize:15];
+    header.textLabel.textColor = [UIColor cellPrimaryTextColor];
+    header.tintColor = [UIColor clearColor];
+    [(UIView *)[header valueForKey:@"_backgroundView"] setBackgroundColor:[UIColor tableViewBackgroundColor]];
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
-    if(indexPath.section == ZBInfo){
+    if (indexPath.section == ZBInfo) {
         static NSString *cellIdentifier = @"infoCells";
         
         UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellIdentifier];
@@ -203,7 +244,7 @@ enum ZBSectionOrder {
             cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cellIdentifier];
         }
         if (indexPath.row == ZBChangeIcon) {
-            cell.textLabel.text = @"更改图标";
+            cell.textLabel.text = @"变更图标";
             if (@available(iOS 10.3, *)) {
                 if ([[UIApplication sharedApplication] alternateIconName]) {
                     cell.imageView.image = [UIImage imageNamed:[[UIApplication sharedApplication] alternateIconName]];
@@ -215,7 +256,8 @@ enum ZBSectionOrder {
                     UIGraphicsEndImageContext();
                     [cell.imageView.layer setCornerRadius:10];
                     [cell.imageView setClipsToBounds:YES];
-                } else {
+                }
+                else {
                     cell.imageView.image = [UIImage imageNamed:@"AppIcon60x60"];
                     CGSize itemSize = CGSizeMake(40, 40);
                     UIGraphicsBeginImageContextWithOptions(itemSize, NO, UIScreen.mainScreen.scale);
@@ -225,66 +267,140 @@ enum ZBSectionOrder {
                     UIGraphicsEndImageContext();
                     [cell.imageView.layer setCornerRadius:10];
                     [cell.imageView setClipsToBounds:YES];
-                    
                 }
-                
             }
         }
         else if (indexPath.row == ZBChangeTint) {
-            [cell.contentView.subviews makeObjectsPerformSelector: @selector(removeFromSuperview)];
+            [cell.contentView.subviews makeObjectsPerformSelector:@selector(removeFromSuperview)];
             NSString *forthTint;
-            if([ZBDevice darkModeEnabled]) {
+            if ([ZBDevice darkModeEnabled]) {
                 forthTint = @"白色";
-            } else {
+            }
+            else {
                 forthTint = @"黑色";
             }
             UISegmentedControl *segmentedControl = [[UISegmentedControl alloc] initWithItems:@[@"默认", @"蓝色", @"橙色", forthTint]];
-            segmentedControl.selectedSegmentIndex = (NSInteger)self->selectedSortingType;
+            segmentedControl.selectedSegmentIndex = (NSInteger)self->tintColorType;
             segmentedControl.tintColor = [UIColor tintColor];
-            [segmentedControl addTarget:self action:@selector(segmentedControlValueChanged:) forControlEvents:UIControlEventValueChanged];
-            /*segmentedControl.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleBottomMargin;
-            segmentedControl.center = CGPointMake(cell.contentView.bounds.size.width / 2, cell.contentView.bounds.size.height / 2);
-            [cell.contentView addSubview:segmentedControl];*/
+            [segmentedControl addTarget:self action:@selector(tintColorSegmentedControlValueChanged:) forControlEvents:UIControlEventValueChanged];
             cell.accessoryView = segmentedControl;
-            cell.textLabel.text = @"色调";
-        } else if (indexPath.row == ZBOledSwitch) {
-            [cell.contentView.subviews makeObjectsPerformSelector: @selector(removeFromSuperview)];
-            UISwitch *darkSwitch = [[UISwitch alloc] initWithFrame:CGRectZero];
-            darkSwitch.on = [[NSUserDefaults standardUserDefaults] boolForKey:@"oledMode"];
-            [darkSwitch addTarget:self action:@selector(toggleOledDarkMode:) forControlEvents:UIControlEventValueChanged];
-            [darkSwitch setOnTintColor:[UIColor tintColor]];
-            cell.accessoryView = darkSwitch;
-            cell.textLabel.text = @"OLED专用暗黑模式";
+            cell.textLabel.text = @"颜色选择";
+        }
+        else if (indexPath.row == ZBChangeMode) {
+            [cell.contentView.subviews makeObjectsPerformSelector:@selector(removeFromSuperview)];
+            UISegmentedControl *segmentedControl = [[UISegmentedControl alloc] initWithItems:@[@"默认", @"OLED模式", @"IOS13模式"]];
+            segmentedControl.selectedSegmentIndex = (NSInteger)self->selectedMode;
+            segmentedControl.tintColor = [UIColor tintColor];
+            [segmentedControl addTarget:self action:@selector(modeValueChanged:) forControlEvents:UIControlEventValueChanged];
+            cell.accessoryView = segmentedControl;
+            cell.textLabel.text = @"暗黑模式";
         }
         [cell.textLabel setTextColor:[UIColor cellPrimaryTextColor]];
         return cell;
     }
-    else if (indexPath.section == ZBAdvanced) {
-        static NSString *cellIdentifier = @"advancedCells";
+    else if (indexPath.section == ZBFeatured) {
+        static NSString *cellIdentifier = @"uiCells";
         
         UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellIdentifier];
         
         if (cell == nil) {
             cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cellIdentifier];
         }
-        NSString *text;
+        if (indexPath.row == ZBFeaturedEnable) {
+            [cell.contentView.subviews makeObjectsPerformSelector:@selector(removeFromSuperview)];
+            UISwitch *enableSwitch = [[UISwitch alloc] initWithFrame:CGRectZero];
+            enableSwitch.on = [[NSUserDefaults standardUserDefaults] boolForKey:wantsFeaturedKey];
+            [enableSwitch addTarget:self action:@selector(toggleFeatured:) forControlEvents:UIControlEventValueChanged];
+            [enableSwitch setOnTintColor:[UIColor tintColor]];
+            cell.accessoryView = enableSwitch;
+            cell.textLabel.text = @"开启源特色";
+        }
+        else if (indexPath.row == ZBFeatureOrRandomToggle) {
+            [cell.contentView.subviews makeObjectsPerformSelector:@selector(removeFromSuperview)];
+            UISegmentedControl *segmentedControl = [[UISegmentedControl alloc] initWithItems:@[@"源特色", @"随机"]];
+            segmentedControl.selectedSegmentIndex = [[NSNumber numberWithBool:[[NSUserDefaults standardUserDefaults] boolForKey:randomFeaturedKey]] integerValue];
+            segmentedControl.tintColor = [UIColor tintColor];
+            [segmentedControl addTarget:self action:@selector(featuredSegmentedControlValueChanged:) forControlEvents:UIControlEventValueChanged];
+            cell.accessoryView = segmentedControl;
+            cell.textLabel.text = @"功能类型";
+            [cell setSelectionStyle:UITableViewCellSelectionStyleNone];
+        }
+        else {
+            cell.textLabel.text = @"选择标题突出的源";
+            cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+        }
+        [cell.textLabel setTextColor:[UIColor cellPrimaryTextColor]];
+        return cell;
+    }
+    else if (indexPath.section == ZBNews) {
+        static NSString *cellIdentifier = @"newsCells";
+        
+        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellIdentifier];
+        
+        if (cell == nil) {
+            cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cellIdentifier];
+        }
+        [cell.contentView.subviews makeObjectsPerformSelector:@selector(removeFromSuperview)];
+        UISwitch *enableSwitch = [[UISwitch alloc] initWithFrame:CGRectZero];
+        enableSwitch.on = [[NSUserDefaults standardUserDefaults] boolForKey:wantsNewsKey];
+        [enableSwitch addTarget:self action:@selector(toggleNews:) forControlEvents:UIControlEventValueChanged];
+        [enableSwitch setOnTintColor:[UIColor tintColor]];
+        cell.accessoryView = enableSwitch;
+        cell.textLabel.text = @"开启变更新闻推送";
+        [cell.textLabel setTextColor:[UIColor cellPrimaryTextColor]];
+        return cell;
+    }
+    else if (indexPath.section == ZBPackages) {
+        static NSString *cellIdentifier = @"packageCells";
+        
+        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellIdentifier];
+        
+        if (cell == nil) {
+            cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cellIdentifier];
+        }
+        NSString *text = nil;
+        if (indexPath.row == ZBIconAction) {
+            text = @"滚动操作显示为";
+            [cell.contentView.subviews makeObjectsPerformSelector:@selector(removeFromSuperview)];
+            UISegmentedControl *segmentedControl = [[UISegmentedControl alloc] initWithItems:@[@"文本", @"图标"]];
+            segmentedControl.selectedSegmentIndex = [[NSNumber numberWithBool:[[NSUserDefaults standardUserDefaults] boolForKey:iconActionKey]] integerValue];
+            segmentedControl.tintColor = [UIColor tintColor];
+            [segmentedControl addTarget:self action:@selector(iconActionSegmentedControlValueChanged:) forControlEvents:UIControlEventValueChanged];
+            cell.accessoryView = segmentedControl;
+            [cell setSelectionStyle:UITableViewCellSelectionStyleNone];
+            [cell.textLabel setTextColor:[UIColor cellPrimaryTextColor]];
+        }
+        cell.textLabel.text = text;
+        return cell;
+    }
+    else if (indexPath.section == ZBAdvanced) {
+        static NSString *cellIdentifier = @"相关操作";
+        
+        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellIdentifier];
+        
+        if (cell == nil) {
+            cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cellIdentifier];
+        }
+        NSString *text = nil;
         if (indexPath.row == ZBDropTables) {
             text = @"快速刷新源库";
-        } else if (indexPath.row == ZBOpenDocs){
+        }
+        else if (indexPath.row == ZBOpenDocs){
             text = @"打开文档目录";
-        } else if (indexPath.row == ZBClearImageCache) {
-            text = @"清除图标缓存";
-        } else if (indexPath.row == ZBClearKeychain){
+        }
+        else if (indexPath.row == ZBClearImageCache) {
+            text = @"清除图像缓存";
+        }
+        else if (indexPath.row == ZBClearKeychain){
             text = @"清除账户密钥";
         }
         cell.textLabel.text = text;
         [cell.textLabel setTextColor:[UIColor tintColor]];
         return cell;
-    } else {
+    }
+    else {
         return nil;
     }
-    
-        
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -301,10 +417,28 @@ enum ZBSectionOrder {
                 case ZBChangeIcon :
                     [self changeIcon];
                     break;
-                case ZBOledSwitch :
+            }
+            break;
+        case ZBFeatured:
+            switch (indexPath.row) {
+                case ZBFeaturedEnable:
                     [self getTappedSwitch:indexPath];
                     break;
+                case ZBFeatureOrRandomToggle:
+                    break;
+                case ZBFeatureBlacklist:
+                    [self openBlackList];
+                    break;
+                default:
+                    break;
             }
+            break;
+        case ZBNews: {
+            UITableViewCell *cell = [self.tableView cellForRowAtIndexPath:indexPath];
+            UISwitch *switcher = (UISwitch *)cell.accessoryView;
+            [switcher setOn:!switcher.on animated:YES];
+            [self toggleNews:switcher];
+        }
             break;
         case ZBAdvanced:
             switch (indexPath.row) {
@@ -335,19 +469,17 @@ enum ZBSectionOrder {
     [self.navigationController pushViewController:changeLog animated:true];
 }
 
-
 - (void)openCommunityRepos {
     UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
     ZBCommunityReposTableViewController *community = [storyboard instantiateViewControllerWithIdentifier:@"communityReposController"];
     [self.navigationController pushViewController:community animated:true];
 }
 
-
 - (void)openWebView:(NSInteger)cellNumber {
     UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
     ZBWebViewController *webController = [storyboard instantiateViewControllerWithIdentifier:@"webController"];
     webController.navigationDelegate = webController;
-    webController.navigationItem.title = @"加载中...";
+    webController.navigationItem.title = @"Loading...";
     NSURL *url = [NSURL URLWithString:@"https://xtm3x.github.io/repo/depictions/xyz.willy.zebra/bugsbugsbugs.html"];
     [self.navigationController.navigationBar setBackgroundColor:[UIColor tableViewBackgroundColor]];
     [self.navigationController.navigationBar setBarTintColor:[UIColor tableViewBackgroundColor]];
@@ -405,33 +537,54 @@ enum ZBSectionOrder {
     }
 }
 
+- (void)toggleFeatured:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    UISwitch *switcher = (UISwitch *)sender;
+    BOOL oled = [defaults boolForKey:wantsFeaturedKey];
+    oled = switcher.isOn;
+    [defaults setBool:oled forKey:wantsFeaturedKey];
+    [defaults synchronize];
+    [ZBDevice hapticButton];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"toggleFeatured" object:self];
+}
+
+- (void)toggleNews:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    UISwitch *switcher = (UISwitch *)sender;
+    BOOL oled = [defaults boolForKey:wantsNewsKey];
+    oled = switcher.isOn;
+    [defaults setBool:oled forKey:wantsNewsKey];
+    [defaults synchronize];
+    [ZBDevice hapticButton];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"toggleNews" object:self];
+}
+
+- (void)openBlackList {
+    UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
+    ZBRepoBlacklistTableViewController *blackList = [storyboard instantiateViewControllerWithIdentifier:@"repoBlacklistController"];
+    [self.navigationController.navigationBar setBackgroundColor:[UIColor tableViewBackgroundColor]];
+    [self.navigationController.navigationBar setBarTintColor:[UIColor tableViewBackgroundColor]];
+    [self.navigationController pushViewController:blackList animated:YES];
+}
+
 - (void)getTappedSwitch:(NSIndexPath *)indexPath {
     UITableViewCell *cell = [self.tableView cellForRowAtIndexPath:indexPath];
     UISwitch *switcher = (UISwitch *)cell.accessoryView;
     [switcher setOn:!switcher.on animated:YES];
-    [self toggleOledDarkMode:switcher];
-    
+    if (indexPath.section == ZBFeatured) {
+        [self toggleFeatured:switcher];
+    }
 }
-
-- (void)toggleOledDarkMode:(id)sender {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    UISwitch *switcher = (UISwitch *)sender;
-    BOOL oled = [defaults boolForKey:@"oledMode"];
-    oled = switcher.isOn;
-    [defaults setBool:oled forKey:@"oledMode"];
-    [defaults synchronize];
-    [self hapticButton];
-    [self oledAnimation];
-}
-
 - (void)oledAnimation {
     [self.tableView reloadData];
     [self.tableView setBackgroundColor:[UIColor tableViewBackgroundColor]];
     [self configureNavBar];
+    [self.tableView setSeparatorColor:[UIColor cellSeparatorColor]];
     self.headerView.backgroundColor = [UIColor tableViewBackgroundColor];
     [ZBDevice darkModeEnabled] ? [ZBDevice configureDarkMode] : [ZBDevice configureLightMode];
     [ZBDevice refreshViews];
     [self setNeedsStatusBarAppearanceUpdate];
+    
     [[NSNotificationCenter defaultCenter] postNotificationName:@"darkMode" object:self];
     CATransition *transition = [CATransition animation];
     transition.type = kCATransitionFade;
@@ -441,22 +594,21 @@ enum ZBSectionOrder {
     transition.subtype = kCATransitionFromTop;
     [self.view.layer addAnimation:transition forKey:nil];
     [self.navigationController.navigationBar.layer addAnimation:transition forKey:nil];
-}
-
-- (void)hapticButton {
-    if (@available(iOS 10.0, *)) {
-        UISelectionFeedbackGenerator *feedback = [[UISelectionFeedbackGenerator alloc] init];
-        [feedback prepare];
-        [feedback selectionChanged];
-        feedback = nil;
+    
+    CGFloat offsetY = self.tableView.contentOffset.y;
+    if (offsetY <= 0) {
+        CGRect frame = self.headerView.frame;
+        frame.size.height = self.tableView.tableHeaderView.frame.size.height - self.tableView.contentOffset.y;
+        frame.origin.y = self.tableView.tableHeaderView.frame.origin.y + self.tableView.contentOffset.y;
+        self.headerView.frame = frame;
     }
 }
 
-- (void)segmentedControlValueChanged:(UISegmentedControl *)segmentedControl {
-    selectedSortingType = (ZBTintSelection)segmentedControl.selectedSegmentIndex;
-    [[NSUserDefaults standardUserDefaults] setObject:@(selectedSortingType) forKey:@"tintSelection"];
+- (void)tintColorSegmentedControlValueChanged:(UISegmentedControl *)segmentedControl {
+    tintColorType = (ZBTintSelection)segmentedControl.selectedSegmentIndex;
+    [[NSUserDefaults standardUserDefaults] setObject:@(tintColorType) forKey:tintSelectionKey];
     [[NSUserDefaults standardUserDefaults] synchronize];
-    [self hapticButton];
+    [ZBDevice hapticButton];
     [[NSNotificationCenter defaultCenter] postNotificationName:@"darkMode" object:self];
     [UIView animateWithDuration:0.5 delay:0 usingSpringWithDamping:1 initialSpringVelocity:1 options:UIViewAnimationOptionCurveEaseInOut animations:^{
         [self.tableView reloadData];
@@ -467,7 +619,59 @@ enum ZBSectionOrder {
     } completion:nil];
 }
 
+- (void)featuredSegmentedControlValueChanged:(UISegmentedControl *)segmentedControl {
+    BOOL selectedMode = [[NSNumber numberWithInteger:segmentedControl.selectedSegmentIndex] boolValue];
+    [[NSUserDefaults standardUserDefaults] setBool:selectedMode forKey:randomFeaturedKey];
+    [[NSUserDefaults standardUserDefaults] synchronize];
+    [ZBDevice hapticButton];
+    [self.tableView reloadData];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"refreshCollection" object:self];
+    CATransition *transition = [CATransition animation];
+    transition.type = kCATransitionFade;
+    transition.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut];
+    transition.fillMode = kCAFillModeForwards;
+    transition.duration = 0.35;
+    transition.subtype = kCATransitionFromTop;
+    [self.tableView.layer addAnimation:transition forKey:@"UITableViewReloadDataAnimationKey"];
+}
+
+- (void)modeValueChanged:(UISegmentedControl *)segmentedControl {
+    if (segmentedControl.selectedSegmentIndex == 0) {
+        selectedMode = ZBDefaultMode;
+        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+        [defaults setBool:NO forKey:oledModeKey];
+        [defaults setBool:NO forKey:thirteenModeKey];
+        [defaults synchronize];
+    }
+    else if (segmentedControl.selectedSegmentIndex == 1) {
+        selectedMode = ZBOled;
+        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+        [defaults setBool:YES forKey:oledModeKey];
+        [defaults setBool:NO forKey:thirteenModeKey];
+        [defaults synchronize];
+    }
+    else if (segmentedControl.selectedSegmentIndex == 2) {
+        selectedMode = ZBThirteen;
+        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+        [defaults setBool:NO forKey:oledModeKey];
+        [defaults setBool:YES forKey:thirteenModeKey];
+        [defaults synchronize];
+    }
+    
+    [ZBDevice hapticButton];
+    [self oledAnimation];
+}
+
+- (void)iconActionSegmentedControlValueChanged:(UISegmentedControl *)segmentedControl {
+    BOOL useIcon = segmentedControl.selectedSegmentIndex == 1;
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults setBool:useIcon forKey:iconActionKey];
+    [defaults synchronize];
+    [[ZBQueue sharedInstance] setUseIcon:useIcon];
+}
+
 - (IBAction)doneButtonPressed:(id)sender {
     [self dismissViewControllerAnimated:YES completion:nil];
 }
+
 @end

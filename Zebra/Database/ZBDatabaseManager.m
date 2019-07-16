@@ -119,20 +119,23 @@
 }
 
 - (void)bulkDatabaseStartedUpdate {
-    for (id <ZBDatabaseDelegate> delegate in self.databaseDelegates) {
+    for (int i = 0; i < self.databaseDelegates.count; ++i) {
+        id <ZBDatabaseDelegate> delegate = self.databaseDelegates[i];
         [delegate databaseStartedUpdate];
     }
 }
 
 - (void)bulkDatabaseCompletedUpdate:(int)updates {
     databaseBeingUpdated = NO;
-    for (id <ZBDatabaseDelegate> delegate in self.databaseDelegates) {
+    for (int i = 0; i < self.databaseDelegates.count; ++i) {
+        id <ZBDatabaseDelegate> delegate = self.databaseDelegates[i];
         [delegate databaseCompletedUpdate:updates];
     }
 }
 
 - (void)bulkPostStatusUpdate:(NSString *)status atLevel:(ZBLogLevel)level {
-    for (id <ZBDatabaseDelegate> delegate in self.databaseDelegates) {
+    for (int i = 0; i < self.databaseDelegates.count; ++i) {
+        id <ZBDatabaseDelegate> delegate = self.databaseDelegates[i];
         if ([delegate respondsToSelector:@selector(postStatusUpdate:atLevel:)]) {
             [delegate postStatusUpdate:status atLevel:level];
         }
@@ -140,7 +143,8 @@
 }
 
 - (void)bulkSetRepo:(NSString *)bfn busy:(BOOL)busy {
-    for (id <ZBDatabaseDelegate> delegate in self.databaseDelegates) {
+    for (int i = 0; i < self.databaseDelegates.count; ++i) {
+        id <ZBDatabaseDelegate> delegate = self.databaseDelegates[i];
         if ([delegate respondsToSelector:@selector(setRepo:busy:)]) {
             [delegate setRepo:bfn busy:busy];
         }
@@ -666,8 +670,13 @@
         sqlite3_stmt *statement;
         if (sqlite3_prepare_v2(database, [query UTF8String], -1, &statement, nil) == SQLITE_OK) {
             while (sqlite3_step(statement) == SQLITE_ROW) {
-                ZBPackage *package = [[ZBPackage alloc] initWithSQLiteStatement:statement];
-                
+                const char *packageIDChars =        (const char *)sqlite3_column_text(statement, ZBPackageColumnPackage);
+                const char *versionChars =          (const char *)sqlite3_column_text(statement, ZBPackageColumnVersion);
+                NSString *packageID = [NSString stringWithUTF8String:packageIDChars];
+                NSString *packageVersion = [NSString stringWithUTF8String:versionChars];
+                //ZBPackage *package = [[ZBPackage alloc] initWithSQLiteStatement:statement];
+                ZBPackage *package = [self packageForID:packageID equalVersion:packageVersion];
+                package.version = packageVersion;
                 [installedPackageIDs addObject:[package identifier]];
                 [installedPackages addObject:package];
             }
@@ -764,11 +773,11 @@
         NSMutableArray *searchResults = [NSMutableArray new];
         NSString *query;
         
-        if (results) {
+        if (results && results != -1) {
             query = [NSString stringWithFormat:@"SELECT * FROM PACKAGES WHERE NAME LIKE \'%%%@\%%\' AND REPOID > -1 ORDER BY (CASE WHEN NAME = \'%@\' THEN 1 WHEN NAME LIKE \'%@%%\' THEN 2 ELSE 3 END) COLLATE NOCASE LIMIT %d", name, name, name, results];
         }
         else {
-            query = [NSString stringWithFormat:@"SELECT * FROM PACKAGES WHERE NAME LIKE \'%%%@\%%\' AND REPOID > -1 ORDER BY (CASE WHEN NAME = \'%@\' THEN 1 WHEN NAME LIKE \'%@%%\' THEN 2 ELSE 3 END) COLLATE NOCASE", name, name, name];
+            query = [NSString stringWithFormat:@"SELECT * FROM PACKAGES WHERE (NAME LIKE \'%%%@\%%\') OR (SHORTDESCRIPTION LIKE \'%%%@\%%\') AND REPOID > -1 ORDER BY (CASE WHEN NAME = \'%@\' THEN 1 WHEN NAME LIKE \'%@%%\' THEN 2 ELSE 3 END) COLLATE NOCASE", name, name, name, name];
         }
         
         sqlite3_stmt *statement;
@@ -1241,7 +1250,7 @@
     [self bulkPostStatusUpdate:[NSString stringWithFormat:@"Downloading %@\n", filename] atLevel:ZBLogLevelDescript];
 }
 
-- (void)predator:(nonnull ZBDownloadManager *)downloadManager finishedDownloadForFile:(nonnull NSString *)filename withError:(NSError * _Nullable)error {
+- (void)predator:(nonnull ZBDownloadManager *)downloadManager finishedDownloadForFile:(NSString *_Nullable)filename withError:(NSError * _Nullable)error {
     [self bulkSetRepo:filename busy:false];
     if (error != NULL) {
         if (filename) {

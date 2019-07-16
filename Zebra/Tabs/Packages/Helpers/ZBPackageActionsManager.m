@@ -16,6 +16,15 @@
 
 @implementation ZBPackageActionsManager
 
++ (instancetype)sharedInstance {
+    static dispatch_once_t p = 0;
+    __strong static ZBPackageActionsManager *instance = nil;
+    dispatch_once(&p, ^{
+        instance = [[self alloc] init];
+    });
+    return instance;
+}
+
 + (void)presentQueue:(UIViewController *)vc parent:(UIViewController *)parent {
     UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"Main" bundle: nil];
     UINavigationController *qvc = [storyboard instantiateViewControllerWithIdentifier:@"queueController"];
@@ -162,7 +171,7 @@
     
     for (ZBQueueType q = ZBQueueTypeInstall; q <= ZBQueueTypeClear; q <<= 1) {
         if ([self canHaveAction:possibleActions forPackage:package queue:q]) {
-            NSString *title = [queue queueToKey:q];
+            NSString *title = [queue queueToKeyDisplayed:q];
             void (^handler)(void) = [self getHandler:type package:package indexPath:indexPath queue:q to:queue viewController:vc parent:parent completion:completion];
             id action = [self getAction:type title:title queue:q handler:handler];
             [actions addObject:action];
@@ -185,21 +194,21 @@
     NSMutableArray *actions = [self actions:2 forPackage:package indexPath:nil viewController:vc parent:parent completion:NULL];
     
     if ([package ignoreUpdates]) {
-        UIAlertAction *unignore = [UIAlertAction actionWithTitle:@"Show Updates" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        UIAlertAction *unignore = [UIAlertAction actionWithTitle:@"显示更新" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
             [package setIgnoreUpdates:false];
         }];
         
         [actions addObject:unignore];
     }
     else {
-        UIAlertAction *ignore = [UIAlertAction actionWithTitle:@"Ignore Updates" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        UIAlertAction *ignore = [UIAlertAction actionWithTitle:@"屏蔽更新" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
             [package setIgnoreUpdates:true];
         }];
         
         [actions addObject:ignore];
     }
     
-    UIAlertAction *cancel = [UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:NULL];
+    UIAlertAction *cancel = [UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:NULL];
     [actions addObject:cancel];
     
     return actions;
@@ -215,7 +224,7 @@
 }
 
 + (void)selectVersionForPackage:(ZBPackage *)package indexPath:(NSIndexPath *)indexPath viewController:(UIViewController *)vc parent:(UIViewController *)parent {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:[NSString stringWithFormat:@"Select Version: %@ (%@)", [package name], [package version]] message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:[NSString stringWithFormat:@"选择版本: %@ (%@)", [package name], [package version]] message:nil preferredStyle:UIAlertControllerStyleActionSheet];
     
     for (ZBPackage *otherPackage in [package otherVersions]) {
         
@@ -228,7 +237,7 @@
         [alert addAction:action];
     }
     
-    UIAlertAction *cancel = [UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:NULL];
+    UIAlertAction *cancel = [UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:NULL];
     [alert addAction:cancel];
     
     if (indexPath) {

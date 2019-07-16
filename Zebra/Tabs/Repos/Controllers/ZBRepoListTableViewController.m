@@ -52,7 +52,6 @@
     self.extendedLayoutIncludesOpaqueBars = true;
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(delewhoop:) name:@"deleteRepoTouchAction" object:nil];
     
-    self.tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
     self.tableView.sectionIndexBackgroundColor = [UIColor clearColor];
     [self.tableView registerNib:[UINib nibWithNibName:@"ZBRepoTableViewCell" bundle:nil] forCellReuseIdentifier:@"repoTableViewCell"];
     
@@ -88,11 +87,19 @@
     UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
     NSURL *url = [NSURL URLWithString:pasteboard.string];
     NSArray *urlBlacklist = @[@"youtube.com", @"google.com", @"reddit.com", @"twitter.com", @"facebook.com", @"imgur.com", @"discord.com", @"discord.gg"];
+    NSMutableArray *repos = [NSMutableArray new];
     
+    for (ZBRepo *repo in [self.databaseManager repos]) {
+        if (repo.secure) {
+            [repos addObject:[[NSURL URLWithString:[NSString stringWithFormat:@"https://%@", repo.baseURL]] host]];
+        } else {
+            [repos addObject:[[NSURL URLWithString:[NSString stringWithFormat:@"http://%@", repo.baseURL]] host]];
+        }
+    }
     if ((url && url.scheme && url.host)) {
         if ([[url scheme] isEqual:@"https"] || [[url scheme] isEqual:@"http"]) {
             if (!askedToAddFromClipboard || ![lastPaste isEqualToString:pasteboard.string]) {
-                if (![urlBlacklist containsObject:url.host]) {
+                if (![urlBlacklist containsObject:url.host] && ![repos containsObject:url.host]) {
                     [self showAddRepoFromClipboardAlert:url];
                 }
             }
@@ -225,7 +232,7 @@
 }
 
 - (void)showAddRepoFromClipboardAlert:(NSURL *)url {
-    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"您是否添加剪切板中识别的源?" message:url.absoluteString preferredStyle:UIAlertControllerStyleAlert];
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"要从剪贴板中添加源吗?" message:url.absoluteString preferredStyle:UIAlertControllerStyleAlert];
     alertController.view.tintColor = [UIColor tintColor];
     
     [alertController addAction:[UIAlertAction actionWithTitle:@"不" style:UIAlertActionStyleCancel handler:nil]];
@@ -263,9 +270,9 @@
 
 - (void)presentVerificationFailedAlert:(NSString *)message url:(NSURL *)url present:(BOOL)present {
     dispatch_async(dispatch_get_main_queue(), ^{
-        UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"无法验证的源" message:message preferredStyle:UIAlertControllerStyleAlert];
+        UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"Unable to verify Repo" message:message preferredStyle:UIAlertControllerStyleAlert];
         alertController.view.tintColor = [UIColor tintColor];
-        UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"好的" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+        UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"Ok" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
             if (present) {
                 [self showAddRepoAlert:url];
             }
@@ -276,7 +283,7 @@
 }
 
 - (void)addReposWithText:(NSString *)text {
-    UIAlertController *wait = [UIAlertController alertControllerWithTitle:@"请稍等..." message:@"验证软件源中(s)" preferredStyle:UIAlertControllerStyleAlert];
+    UIAlertController *wait = [UIAlertController alertControllerWithTitle:@"Please Wait..." message:@"Verifying Source(s)" preferredStyle:UIAlertControllerStyleAlert];
     [self presentViewController:wait animated:true completion:nil];
     
     __weak typeof(self) weakSelf = self;
@@ -287,13 +294,13 @@
                 UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:@"Error" message:error preferredStyle:UIAlertControllerStyleAlert];
                 
                 if (failedURLs.count) {
-                    UIAlertAction *retryAction = [UIAlertAction actionWithTitle:@"重试" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                    UIAlertAction *retryAction = [UIAlertAction actionWithTitle:@"Retry" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
                         [weakSelf addReposWithText:text];
                     }];
                     
                     [errorAlert addAction:retryAction];
                     
-                    UIAlertAction *editAction = [UIAlertAction actionWithTitle:@"编辑" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                    UIAlertAction *editAction = [UIAlertAction actionWithTitle:@"Edit" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
                         if ([failedURLs count] > 1) {
                             UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
                             ZBAddRepoViewController *addRepo = [storyboard instantiateViewControllerWithIdentifier:@"addSourcesController"];
@@ -313,7 +320,7 @@
                     [errorAlert addAction:editAction];
                 }
                 
-                UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil];
+                UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil];
                 
                 [errorAlert addAction:cancelAction];
                 
@@ -466,6 +473,14 @@
     return [self hasDataInSection:section] ? 30 : 0;
 }
 
+- (CGFloat) tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
+    return UITableViewAutomaticDimension;
+}
+
+- (CGFloat) tableView:(UITableView *)tableView estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
+    return 65;
+}
+
 - (NSArray *)sectionIndexTitlesForTableView:(UITableView *)tableView {
     return sectionIndexTitles;
 }
@@ -565,14 +580,14 @@
 
 - (void)handleImportOf:(NSURL *)url {
     if ([[url pathExtension] isEqualToString:@"list"]) {
-        NSMutableString *urls = [@"您想x添加这些导入的源吗?\n" mutableCopy];
+        NSMutableString *urls = [@"Would you like to import the following repos?\n" mutableCopy];
         
         NSError *readError;
         NSArray *contents = [[NSString stringWithContentsOfURL:url encoding:NSUTF8StringEncoding error:&readError] componentsSeparatedByString:@"\n"];
         if (readError != NULL) {
-            UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"错误" message:readError.localizedDescription preferredStyle:UIAlertControllerStyleAlert];
+            UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"Error" message:readError.localizedDescription preferredStyle:UIAlertControllerStyleAlert];
             
-            UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"是" style:UIAlertActionStyleCancel handler:NULL];
+            UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"Ok" style:UIAlertActionStyleCancel handler:NULL];
             
             [alertController addAction:okAction];
             [self presentViewController:alertController animated:true completion:nil];
@@ -585,9 +600,9 @@
             }
         }
         
-        UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"导入源" message:urls preferredStyle:UIAlertControllerStyleAlert];
+        UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"Import Sources" message:urls preferredStyle:UIAlertControllerStyleAlert];
         
-        UIAlertAction *yesAction = [UIAlertAction actionWithTitle:@"是" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        UIAlertAction *yesAction = [UIAlertAction actionWithTitle:@"Yes" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
             ZBRepoManager *repoManager = [ZBRepoManager sharedInstance];
             
             [repoManager mergeSourcesFrom:url into:[ZBAppDelegate sourcesListURL] completion:^(NSError * _Nonnull error) {
@@ -603,7 +618,7 @@
             }];
         }];
         
-        UIAlertAction *noAction = [UIAlertAction actionWithTitle:@"不" style:UIAlertActionStyleCancel handler:NULL];
+        UIAlertAction *noAction = [UIAlertAction actionWithTitle:@"No" style:UIAlertActionStyleCancel handler:NULL];
         
         [alertController addAction:yesAction];
         [alertController addAction:noAction];
@@ -611,14 +626,14 @@
         [self presentViewController:alertController animated:true completion:nil];
     }
     else {
-        NSMutableString *urls = [@"您想添加这些源?\n" mutableCopy];
+        NSMutableString *urls = [@"Would you like to import the following repos?\n" mutableCopy];
         
         NSError *readError;
         NSArray *contents = [[NSString stringWithContentsOfURL:url encoding:NSUTF8StringEncoding error:&readError] componentsSeparatedByString:@"\n"];
         if (readError != NULL) {
             UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"Error" message:readError.localizedDescription preferredStyle:UIAlertControllerStyleAlert];
             
-            UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"是" style:UIAlertActionStyleCancel handler:NULL];
+            UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"Ok" style:UIAlertActionStyleCancel handler:NULL];
             
             [alertController addAction:okAction];
             [self presentViewController:alertController animated:true completion:nil];
@@ -631,9 +646,9 @@
             }
         }
         
-        UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"导入源" message:urls preferredStyle:UIAlertControllerStyleAlert];
+        UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"Import Sources" message:urls preferredStyle:UIAlertControllerStyleAlert];
         
-        UIAlertAction *yesAction = [UIAlertAction actionWithTitle:@"是" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        UIAlertAction *yesAction = [UIAlertAction actionWithTitle:@"Yes" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
             ZBRepoManager *repoManager = [ZBRepoManager sharedInstance];
             
             [repoManager mergeSourcesFrom:url into:[ZBAppDelegate sourcesListURL] completion:^(NSError * _Nonnull error) {
@@ -649,7 +664,7 @@
             }];
         }];
         
-        UIAlertAction *noAction = [UIAlertAction actionWithTitle:@"不" style:UIAlertActionStyleCancel handler:NULL];
+        UIAlertAction *noAction = [UIAlertAction actionWithTitle:@"No" style:UIAlertActionStyleCancel handler:NULL];
         
         [alertController addAction:yesAction];
         [alertController addAction:noAction];

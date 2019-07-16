@@ -47,9 +47,7 @@
     searchController.searchBar.delegate = self;
     searchController.searchBar.tintColor = [UIColor tintColor];
     searchController.searchBar.placeholder = @"Packages";
-    if ([ZBDevice darkModeEnabled]) {
-        searchController.searchBar.keyboardAppearance = UIKeyboardAppearanceDark;
-    }
+    
     self.definesPresentationContext = YES;
     if (@available(iOS 9.1, *)) {
         searchController.obscuresBackgroundDuringPresentation = false;
@@ -61,8 +59,6 @@
         self.tableView.tableHeaderView = searchController.searchBar;
     }
     self.tableView.tableFooterView = [UIView new];
-    
-    self.tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
     
     [self.tableView registerNib:[UINib nibWithNibName:@"ZBPackageTableViewCell" bundle:nil]
          forCellReuseIdentifier:@"packageTableViewCell"];
@@ -119,7 +115,7 @@
 
 - (void)searchBar:(UISearchBar *)searchBar textDidChange:(NSString *)searchText {
     if (![searchText isEqualToString:@""]) {
-        results = [databaseManager searchForPackageName:searchText numberOfResults:25];
+        results = [databaseManager searchForPackageName:searchText numberOfResults:60];
     }
     else {
         results = nil;
@@ -225,12 +221,16 @@
     }
 }
 
-- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
+- (CGFloat) tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
+    return UITableViewAutomaticDimension;
+}
+
+- (CGFloat) tableView:(UITableView *)tableView estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
     return 65;
 }
 
 - (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section {
-    return [[UIView alloc]initWithFrame:CGRectMake(0, 0, 0, 0)];
+    return [[UIView alloc] initWithFrame:CGRectMake(0, 0, 0, 0)];
 }
 
 - (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section {
@@ -244,10 +244,27 @@
 }
 
 - (NSArray *)tableView:(UITableView *)tableView editActionsForRowAtIndexPath:(NSIndexPath *)indexPath {
-    ZBPackage *package = (ZBPackage *)[results objectAtIndex:indexPath.row];
-    return [ZBPackageActionsManager rowActionsForPackage:package indexPath:indexPath viewController:self parent:nil completion:^(void) {
-        [tableView reloadData];
-    }];
+    if (searchController.active) {
+        if ([results objectAtIndex:indexPath.row]) {
+            ZBPackage *package = (ZBPackage *)[results objectAtIndex:indexPath.row];
+            return [ZBPackageActionsManager rowActionsForPackage:package indexPath:indexPath viewController:self parent:nil completion:^(void) {
+                [tableView reloadData];
+            }];
+        } else {
+            return nil;
+        }
+    } else {
+        UITableViewRowAction *deleteAction = [UITableViewRowAction rowActionWithStyle:UITableViewRowActionStyleDestructive title:@"Delete"  handler:^(UITableViewRowAction *action, NSIndexPath *indexPath){
+            [self->searches removeObjectAtIndex:indexPath.row];
+            [[NSUserDefaults standardUserDefaults] setObject:self->searches forKey:@"searches"];
+            [[NSUserDefaults standardUserDefaults] synchronize];
+            [tableView beginUpdates];
+            [tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
+            [tableView endUpdates];
+        }];
+        deleteAction.backgroundColor = [UIColor redColor];
+        return @[deleteAction];
+    }
 }
 
 - (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -259,10 +276,10 @@
 - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
     ZBPackageDepictionViewController *destination = (ZBPackageDepictionViewController *)[segue destinationViewController];
     NSIndexPath *indexPath = sender;
-    
     destination.package = [results objectAtIndex:indexPath.row];
     
     [databaseManager closeDatabase];
+    destination.view.backgroundColor = [UIColor tableViewBackgroundColor];
 }
 
 - (UIViewController *)previewingContext:(id<UIViewControllerPreviewing>)previewingContext viewControllerForLocation:(CGPoint)location {
@@ -288,7 +305,6 @@
     self.tableView.sectionIndexColor = [UIColor tintColor];
     [self.navigationController.navigationBar setTintColor:[UIColor tintColor]];
     searchController.searchBar.tintColor = [UIColor tintColor];
-    searchController.searchBar.keyboardAppearance = [[notif name] isEqualToString:@"darkMode"] ? UIKeyboardAppearanceDark : UIKeyboardAppearanceDefault;
 }
 
 - (UIStatusBarStyle)preferredStatusBarStyle {

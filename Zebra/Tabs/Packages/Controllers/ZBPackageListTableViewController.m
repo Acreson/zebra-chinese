@@ -17,6 +17,7 @@
 #import <Repos/Helpers/ZBRepo.h>
 #import <Packages/Views/ZBPackageTableViewCell.h>
 #import <UIColor+GlobalColors.h>
+#import "ZBDevice.h"
 
 typedef enum {
     ZBSortingTypeABC,
@@ -54,7 +55,6 @@ typedef enum {
     [super viewDidLoad];
     selectedSortingType = ZBSortingTypeABC;
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(darkMode:) name:@"darkMode" object:nil];
-    self.tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
     self.tableView.sectionIndexBackgroundColor = [UIColor clearColor];
     self.tableView.contentInset = UIEdgeInsetsMake(5, 0, 0, 0);
     [self.tableView registerNib:[UINib nibWithNibName:@"ZBPackageTableViewCell" bundle:nil] forCellReuseIdentifier:@"packageTableViewCell"];
@@ -73,11 +73,11 @@ typedef enum {
 - (void)configureNavigationButtons {
     if ([repo repoID] == 0) {
         [self configureUpgradeButton];
-        [self configureSegmentedController];
         [self configureQueueOrShareButton];
     } else {
         [self configureLoadMoreButton];
     }
+    [self configureSegmentedController];
 }
 
 - (void)updateCollation {
@@ -101,17 +101,6 @@ typedef enum {
             [packagesTabBarItem setBadgeValue:totalUpdates ? [NSString stringWithFormat:@"%lu", (unsigned long)totalUpdates] : nil];
             [[UIApplication sharedApplication] setApplicationIconBadgeNumber:totalUpdates];
             
-            if (self->selectedSortingType == ZBSortingTypeDate) {
-                self->sortedPackages = [self->packages sortedArrayUsingComparator:^NSComparisonResult(id a, id b) {
-                    NSDate *first = [(ZBPackage *)a installedDate];
-                    NSDate *second = [(ZBPackage *)b installedDate];
-                    return [second compare:first];
-                }];
-            }
-            else {
-                self->sortedPackages = nil;
-            }
-            [self configureNavigationButtons];
             self->isRefreshingTable = NO;
         }
         else {
@@ -122,6 +111,17 @@ typedef enum {
             self.continueBatchLoad = self.batchLoad = YES;
             [self configureLoadMoreButton];
         }
+        if (self->selectedSortingType == ZBSortingTypeDate) {
+            self->sortedPackages = [self->packages sortedArrayUsingComparator:^NSComparisonResult(id a, id b) {
+                NSDate *first = [(ZBPackage *)a installedDate];
+                NSDate *second = [(ZBPackage *)b installedDate];
+                return [second compare:first];
+            }];
+        }
+        else {
+            self->sortedPackages = nil;
+        }
+        [self configureNavigationButtons];
         self->numberOfPackages = (int)[self->packages count];
         
         [self updateCollation];
@@ -211,7 +211,7 @@ typedef enum {
 }
 
 - (void)askClearQueue {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"斑马" message:@"您确定要清除队列吗?" preferredStyle:UIAlertControllerStyleActionSheet];
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"斑马" message:@"你确定要清除队列?" preferredStyle:UIAlertControllerStyleActionSheet];
     
     UIAlertAction *clearAction = [UIAlertAction actionWithTitle:@"清除" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
         [self clearQueue];
@@ -394,6 +394,14 @@ typedef enum {
     return [self tableView:tableView numberOfRowsInSection:section] ? 30 : 0;
 }
 
+- (CGFloat) tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
+    return UITableViewAutomaticDimension;
+}
+
+- (CGFloat) tableView:(UITableView *)tableView estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
+    return 65;
+}
+
 - (NSArray *)partitionObjects:(NSArray *)array collationStringSelector:(SEL)selector {
     UILocalizedIndexedCollation *collation = [UILocalizedIndexedCollation currentCollation];
     sectionIndexTitles = [NSMutableArray arrayWithArray:[collation sectionIndexTitles]];
@@ -468,6 +476,7 @@ typedef enum {
             destination.navigationItem.largeTitleDisplayMode = UINavigationItemLargeTitleDisplayModeNever;
         }
         [self setDestinationVC:indexPath destination:destination];
+        destination.view.backgroundColor = [UIColor tableViewBackgroundColor];
     }
 }
 
@@ -487,8 +496,10 @@ typedef enum {
 
 - (void)darkMode:(NSNotification *)notif {
     [self.tableView reloadData];
+    [ZBDevice refreshViews];
     self.tableView.sectionIndexColor = [UIColor tintColor];
     [self.navigationController.navigationBar setTintColor:[UIColor tintColor]];
+    [self.navigationController.navigationBar setBarTintColor:nil];
 }
 
 @end

@@ -181,7 +181,7 @@
 }
 
 - (BOOL)canDelete {
-    return ![[self origin] isEqualToString:@"xTM3x Repo"];
+    return ![[self origin] isEqualToString:@"Acreson's Repo"];
 }
 
 - (BOOL)isEqual:(ZBRepo *)object {

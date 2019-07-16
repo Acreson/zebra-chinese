@@ -113,30 +113,36 @@ enum ZBSourcesOrder {
     NSString *cellText = nil;
     NSURL *iconURL = nil;
     NSURL *repoURL = nil;
+    NSString *subText = nil;
     if (indexPath.section == 0) {
         if ([[availableManagers objectAtIndex:indexPath.row] isEqualToString:@"Cydia"]) {
             iconURL = [NSURL URLWithString:@"http://apt.saurik.com/dists/ios/CydiaIcon.png"];
         } else {
             iconURL = [NSURL URLWithString:@"https://xtm3x.github.io/repo/depictions/icons/sileo@3x.png"];
         }
-        cellText = [NSString stringWithFormat:@"一键复制 %@ 的所有源", [availableManagers objectAtIndex:indexPath.row]];
+        cellText = [NSString stringWithFormat:@"复制源从 %@", [availableManagers objectAtIndex:indexPath.row]];
+        subText = [NSString stringWithFormat:@"一键复制 %@ 的所有源", [availableManagers objectAtIndex:indexPath.row]];
     }
     else if (indexPath.section == 1) {
         if ([ZBDevice isChimera]) {
             cellText = @"Chimera";
             iconURL = [NSURL URLWithString:@"https://repo.chimera.sh/CydiaIcon.png"];
+            subText = @"Utility repo for Chimera jailbreak";
         }
         else if ([ZBDevice isUncover]) { //uncover
             cellText = @"Bingner/Elucubratus";
             iconURL = [NSURL URLWithString:@"https://apt.bingner.com/CydiaIcon.png"];
+            subText = @"Utility repo for unc0ver jailbreak";
         }
         else if ([ZBDevice isElectra]) { //electra
             cellText = @"Electra's iOS Utilities";
             iconURL = [NSURL URLWithString:@"https://github.com/coolstar/electra/raw/master/electra/Resources/AppIcon60x60%402x.png"];
+            subText = @"Utility repo for Electra jailbreak";
         }
         else { //cydia
             cellText = @"Cydia/Telesphoreo";
             iconURL = [NSURL URLWithString:@"http://apt.saurik.com/dists/ios/CydiaIcon.png"];
+            subText = @"Cydia utility repo";
         }
     }
     else {
@@ -153,7 +159,12 @@ enum ZBSourcesOrder {
     else {
         cell.repoLabel.text = nil;
     }
-    if (repoURL) {
+    
+    if (subText && !repoURL) {
+        [cell.urlLabel setText:subText];
+        [cell.urlLabel setTextColor:[UIColor cellSecondaryTextColor]];
+    }
+    else if (repoURL) {
         [cell.urlLabel setText:repoURL.absoluteString];
         [cell.urlLabel setTextColor:[UIColor cellSecondaryTextColor]];
     }
@@ -176,9 +187,9 @@ enum ZBSourcesOrder {
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
     switch (section) {
         case 0:
-            return @"快速转移复制源";
+            return @"克隆源";
         case 1:
-            return @"越狱所需要的源";
+            return @"越狱环境所需要的源";
         case 2:
             return @"推荐源";
         default:
@@ -258,7 +269,7 @@ enum ZBSourcesOrder {
                     [errorAlert addAction:editAction];
                 }
                 
-                UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil];
+                UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil];
                 
                 [errorAlert addAction:cancelAction];
                 

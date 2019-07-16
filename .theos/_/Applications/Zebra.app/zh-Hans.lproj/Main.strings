@@ -8,17 +8,11 @@
 /* Class = "UITabBarItem"; title = "Home"; ObjectID = "2br-hO-A7c"; */
 "2br-hO-A7c.title" = "首页";
 
-/* Class = "UIBarButtonItem"; title = "DarkMode"; ObjectID = "2dE-CN-evu"; */
-"2dE-CN-evu.title" = "暗夜模式";
-
 /* Class = "UINavigationItem"; title = "Search"; ObjectID = "31H-5B-Xgc"; */
 "31H-5B-Xgc.title" = "搜索";
 
 /* Class = "UINavigationItem"; title = "Alternate Icons"; ObjectID = "4hP-li-yF0"; */
 "4hP-li-yF0.title" = "变更图标";
-
-/* Class = "UIBarButtonItem"; title = "Settings"; ObjectID = "5Na-Lv-DT1"; */
-"5Na-Lv-DT1.title" = "设置";
 
 /* Class = "UIBarButtonItem"; title = "Add"; ObjectID = "6kO-W0-z9d"; */
 "6kO-W0-z9d.title" = "添加";
@@ -33,13 +27,13 @@
 "Bpj-dl-pWU.title" = "关闭";
 
 /* Class = "UILabel"; text = "Progress Text"; ObjectID = "BuP-O1-Zgo"; */
-"BuP-O1-Zgo.text" = "提升数据";
+"BuP-O1-Zgo.text" = "进步文本";
 
 /* Class = "UITableViewController"; title = "Wish List"; ObjectID = "EZp-oK-GMJ"; */
 "EZp-oK-GMJ.title" = "愿望清单";
 
 /* Class = "UINavigationItem"; title = "Stores"; ObjectID = "Fol-dR-guQ"; */
-"Fol-dR-guQ.title" = "商店";
+"Fol-dR-guQ.title" = "越狱商店";
 
 /* Class = "UILabel"; text = "UDID"; ObjectID = "I0l-s2-v3D"; */
 "I0l-s2-v3D.text" = "UDID";
@@ -74,6 +68,9 @@
 /* Class = "UILabel"; text = "Zebra + Version"; ObjectID = "Yye-PV-Xqq"; */
 "Yye-PV-Xqq.text" = "斑马+版本";
 
+/* Class = "UILabel"; text = "package-name"; ObjectID = "bLd-KE-N3G"; */
+"bLd-KE-N3G.text" = "软件包名称";
+
 /* Class = "UINavigationItem"; title = "Changes"; ObjectID = "eZC-Ua-ycq"; */
 "eZC-Ua-ycq.title" = "变更";
 
@@ -81,7 +78,7 @@
 "gE6-EQ-6Uj.title" = "软件包";
 
 /* Class = "UILabel"; text = "Email"; ObjectID = "gzb-2p-Jk6"; */
-"gzb-2p-Jk6.text" = "邮箱";
+"gzb-2p-Jk6.text" = "又想";
 
 /* Class = "UIBarButtonItem"; title = "Install"; ObjectID = "hET-rE-7Dw"; */
 "hET-rE-7Dw.title" = "安装";
@@ -108,10 +105,10 @@
 "uSZ-TC-nHR.title" = "队列";
 
 /* Class = "UILabel"; text = "Detail"; ObjectID = "utG-bq-Bqo"; */
-"utG-bq-Bqo.text" = "细节";
+"utG-bq-Bqo.text" = "详情";
 
 /* Class = "UIBarButtonItem"; title = "Confirm"; ObjectID = "vfP-8Y-pVN"; */
-"vfP-8Y-pVN.title" = "确认";
+"vfP-8Y-pVN.title" = "继续";
 
 /* Class = "UIButton"; normalTitle = "Done"; ObjectID = "zte-bN-R1X"; */
 "zte-bN-R1X.normalTitle" = "完成";

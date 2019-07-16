@@ -37,12 +37,12 @@
 
 + (NSArray *)filesInstalled:(NSString *)packageID {
     if ([ZBDevice needsSimulation]) {
-        return nil;
+        return @[@"/.", @"/You", @"/You/Are", @"/You/Are/Simulated"];
     }
     NSTask *checkFilesTask = [[NSTask alloc] init];
-    [checkFilesTask setLaunchPath:@"/usr/libexec/zebra/supersling"];
-    NSArray *filesArgs = [[NSArray alloc] initWithObjects: @"dpkg", @"-L", packageID, nil];
-    [checkFilesTask setArguments:filesArgs];
+    NSArray *filesArgs = [[NSArray alloc] initWithObjects: @"-L", packageID, nil];
+    [checkFilesTask setLaunchPath:@"/usr/bin/dpkg"];
+    [ZBDevice asRoot:checkFilesTask arguments:filesArgs];
     
     NSPipe *outPipe = [NSPipe pipe];
     [checkFilesTask setStandardOutput:outPipe];
@@ -66,8 +66,8 @@
         NSLog(@"[Zebra] Trying to find package id");
         //do the ole dpkg -I
         NSTask *task = [[NSTask alloc] init];
-        [task setLaunchPath:@"/usr/libexec/zebra/supersling"];
-        [task setArguments:@[@"/usr/bin/dpkg", @"-I", packageID, @"control"]];
+        [task setLaunchPath:@"/usr/bin/dpkg"];
+        [ZBDevice asRoot:task arguments:@[@"-I", packageID, @"control"]];
         
         NSPipe *pipe = [NSPipe pipe];
         [task setStandardOutput:pipe];
@@ -116,8 +116,8 @@
         NSLog(@"[Zebra] Trying to find package id");
         //do the ole dpkg -I
         NSTask *task = [[NSTask alloc] init];
-        [task setLaunchPath:@"/usr/libexec/zebra/supersling"];
-        [task setArguments:@[@"/usr/bin/dpkg", @"-I", packageID, @"control"]];
+        [task setLaunchPath:@"/usr/bin/dpkg"];
+        [ZBDevice asRoot:task arguments:@[@"-I", packageID, @"control"]];
         
         NSPipe *pipe = [NSPipe pipe];
         [task setStandardOutput:pipe];
@@ -159,8 +159,8 @@
     if ([packageID hasSuffix:@".deb"]) {
         //do the ole dpkg -I
         NSTask *task = [[NSTask alloc] init];
-        [task setLaunchPath:@"/usr/libexec/zebra/supersling"];
-        [task setArguments:@[@"/usr/bin/dpkg", @"-I", packageID, @"control"]];
+        [task setLaunchPath:@"/usr/bin/dpkg"];
+        [ZBDevice asRoot:task arguments:@[@"-I", packageID, @"control"]];
         
         NSPipe *pipe = [NSPipe pipe];
         [task setStandardOutput:pipe];
@@ -500,8 +500,8 @@
     return self.version;
 #else
 	NSTask *installedVersionTask = [[NSTask alloc] init];
-    [installedVersionTask setLaunchPath:@"/usr/libexec/zebra/supersling"];
-    NSArray *versionArgs = [[NSArray alloc] initWithObjects:@"dpkg", @"-s", self.identifier, nil];
+    [installedVersionTask setLaunchPath:@"/usr/bin/dpkg"];
+    NSArray *versionArgs = [[NSArray alloc] initWithObjects:@"-s", self.identifier, nil];
     [installedVersionTask setArguments:versionArgs];
     
     NSPipe *outPipe = [NSPipe pipe];

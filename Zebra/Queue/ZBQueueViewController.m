@@ -25,7 +25,7 @@
     self.navigationController.navigationBar.tintColor = [UIColor tintColor];
     [self.tableView setSeparatorColor:[UIColor cellSeparatorColor]];
     [self refreshBarButtons];
-    self.title = @"队列";
+    self.title = @"Queue";
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -77,7 +77,7 @@
 
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
     NSString *title = [[_queue actionsToPerform] objectAtIndex:section];
-    if ([title isEqual:@"安装"] || [title isEqual:@"重装"] || [title isEqual:@"更新"]) {
+    if ([title isEqual:@"install"] || [title isEqual:@"Reinstall"] || [title isEqual:@"Upgrade"]) {
         ZBQueueType type = [_queue keyToQueue:title];
         if (type) {
             double totalDownloadSize = 0;
@@ -196,11 +196,12 @@
     }
     NSMutableArray <ZBPackage *> *requiredPackages = [_queue packagesRequiredBy:package];
     if (requiredPackages) {
+        ZBQueueType queue = [_queue keyToQueue:action];
         NSMutableArray <NSString *> *requiredPackageNames = [NSMutableArray array];
         for (ZBPackage *package in requiredPackages) {
             [requiredPackageNames addObject:package.name];
         }
-        [details appendString:[NSString stringWithFormat:@" (Required by %@)", [requiredPackageNames componentsJoinedByString:@", "]]];
+        [details appendString:[NSString stringWithFormat:queue == ZBQueueTypeRemove ? @"(Removed by %@)" : @" (Required by %@)", [requiredPackageNames componentsJoinedByString:@", "]]];
     }
     cell.detailTextLabel.text = details;
     
