@@ -42,7 +42,7 @@ enum ZBSourcesOrder {
 - (void)fetchRepoJSON {
     NSMutableURLRequest *request = [[NSMutableURLRequest alloc] init];
     [request setHTTPMethod:@"GET"];
-    [request setURL:[NSURL URLWithString:@"https://raw.githubusercontent.com/Acreson/repo/master/zebra/repo.json"]];
+    [request setURL:[NSURL URLWithString:@"https://raw.githubusercontent.com/Acreson/repo/master/resources/zebra/repo.json"]];
     
     [[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:
       ^(NSData * _Nullable data,
@@ -121,28 +121,28 @@ enum ZBSourcesOrder {
             iconURL = [NSURL URLWithString:@"https://xtm3x.github.io/repo/depictions/icons/sileo@3x.png"];
         }
         cellText = [NSString stringWithFormat:@"复制源从 %@", [availableManagers objectAtIndex:indexPath.row]];
-        subText = [NSString stringWithFormat:@"一键复制 %@ 的所有源", [availableManagers objectAtIndex:indexPath.row]];
+        subText = [NSString stringWithFormat:@"一键复制 %@ 的所有源到斑马", [availableManagers objectAtIndex:indexPath.row]];
     }
     else if (indexPath.section == 1) {
         if ([ZBDevice isChimera]) {
             cellText = @"Chimera";
             iconURL = [NSURL URLWithString:@"https://repo.chimera.sh/CydiaIcon.png"];
-            subText = @"Utility repo for Chimera jailbreak";
+            subText = @"Chimera越狱专用的源";
         }
         else if ([ZBDevice isUncover]) { //uncover
             cellText = @"Bingner/Elucubratus";
             iconURL = [NSURL URLWithString:@"https://apt.bingner.com/CydiaIcon.png"];
-            subText = @"Utility repo for unc0ver jailbreak";
+            subText = @"Unc0ver越狱的专用源";
         }
         else if ([ZBDevice isElectra]) { //electra
             cellText = @"Electra's iOS Utilities";
             iconURL = [NSURL URLWithString:@"https://github.com/coolstar/electra/raw/master/electra/Resources/AppIcon60x60%402x.png"];
-            subText = @"Utility repo for Electra jailbreak";
+            subText = @"Electra越狱的专用源";
         }
         else { //cydia
             cellText = @"Cydia/Telesphoreo";
             iconURL = [NSURL URLWithString:@"http://apt.saurik.com/dists/ios/CydiaIcon.png"];
-            subText = @"Cydia utility repo";
+            subText = @"传统越狱专用源";
         }
     }
     else {
@@ -189,7 +189,7 @@ enum ZBSourcesOrder {
         case 0:
             return @"克隆源";
         case 1:
-            return @"越狱环境所需要的源";
+            return @"环境源";
         case 2:
             return @"推荐源";
         default:
@@ -269,7 +269,7 @@ enum ZBSourcesOrder {
                     [errorAlert addAction:editAction];
                 }
                 
-                UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil];
+                UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil];
                 
                 [errorAlert addAction:cancelAction];
                 

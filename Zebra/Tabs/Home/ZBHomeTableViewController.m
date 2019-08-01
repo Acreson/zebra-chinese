@@ -38,8 +38,10 @@ typedef enum ZBLinksOrder : NSUInteger {
 @end
 
 @implementation ZBHomeTableViewController
+
 @synthesize allFeatured;
 @synthesize selectedFeatured;
+
 - (void)viewDidLoad {
     [super viewDidLoad];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(resetTable) name:@"darkMode" object:nil];
@@ -118,7 +120,7 @@ typedef enum ZBLinksOrder : NSUInteger {
         }
         dispatch_group_enter(group);
         NSURL *requestURL = [NSURL URLWithString:@"sileo-featured.json" relativeToURL:[NSURL URLWithString:basePlusHttp]];
-        NSLog(@"asdfasdf a %@", requestURL.absoluteString);
+        NSLog(@"[Zebra] Cached JSON request URL: %@", requestURL.absoluteString);
         NSURL *checkingURL = requestURL;
         NSURLSession *session = [NSURLSession sharedSession];
         [[session dataTaskWithURL:checkingURL
@@ -126,7 +128,7 @@ typedef enum ZBLinksOrder : NSUInteger {
                     NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *) response;
                     if (data != nil && (long)[httpResponse statusCode] != 404) {
                         NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:kNilOptions error:nil];
-                        NSLog(@"JSON %@", json);
+                        NSLog(@"[Zebra] JSON response data: %@", json);
                         if (!repo.supportsFeaturedPackages) {
                             repo.supportsFeaturedPackages = YES;
                         }
@@ -160,7 +162,7 @@ typedef enum ZBLinksOrder : NSUInteger {
 - (void)packagesFromDB {
     NSArray *packages = [[ZBDatabaseManager sharedInstance] packagesFromRepo:NULL inSection:NULL numberOfPackages:300 startingAt:0];
     NSArray *blockedRepos = [self.defaults arrayForKey:@"blackListedRepos"];
-    NSLog(@"blocked REPOS %@", blockedRepos);
+    NSLog(@"[Zebra] Blocked REPOS %@", blockedRepos);
     if (!blockedRepos) {
         blockedRepos = [NSArray new];
     }
@@ -170,7 +172,7 @@ typedef enum ZBLinksOrder : NSUInteger {
         NSMutableDictionary *dict = [NSMutableDictionary new];
         if (![blockedRepos containsObject:package.repo.baseURL]) {
             if (package.iconPath) {
-                if (![[NSURL URLWithString:package.iconPath] isFileURL]) {
+                if (![[NSURL URLWithString:package.iconPath] isFileURL] && ![[ZBDatabaseManager sharedInstance] packageIsInstalled:package versionStrict:NO]) {
                     [dict setObject:package.iconPath forKey:@"url"];
                     [dict setObject:package.identifier forKey:@"package"];
                     [dict setObject:package.name forKey:@"title"];
@@ -291,7 +293,7 @@ typedef enum ZBLinksOrder : NSUInteger {
             if (cell == nil) {
                 cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cellIdentifier];
             }
-            cell.textLabel.text = @"欢迎使用斑马测试版(Acreson提供汉化优化)!";
+            cell.textLabel.text = @"欢迎使用Zebra beta（Acreson优化汉化）!";
             [cell.textLabel setTextColor:[UIColor cellPrimaryTextColor]];
             [cell setSelectionStyle:UITableViewCellSelectionStyleNone];
             return cell;
@@ -352,11 +354,11 @@ typedef enum ZBLinksOrder : NSUInteger {
             UIImage *image;
             switch (indexPath.row) {
                 case ZBDiscord:
-                    text = @"加入我的Discord";
+                    text = @"加入Discord";
                     image = [UIImage imageNamed:@"discord"];
                     break;
                 case ZBWilsonTwitter:
-                    text = @"关注我的推特";
+                    text = @"关注推特";
                     image = [UIImage imageNamed:@"twitter"];
                     break;
             }
@@ -379,7 +381,7 @@ typedef enum ZBLinksOrder : NSUInteger {
             if (cell == nil) {
                 cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cellIdentifier];
             }
-            [cell.textLabel setText:@"人员名单"];
+            [cell.textLabel setText:@"名单"];
             [cell.imageView setImage:[UIImage imageNamed:@"url"]];
             [self setImageSize:cell.imageView];
             cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
@@ -407,7 +409,7 @@ typedef enum ZBLinksOrder : NSUInteger {
             return @"社区";
             break;
         case ZBCredits:
-            return @"鸣谢";
+            return @"名单";
         default:
             return @"错误";
     }
@@ -493,7 +495,7 @@ typedef enum ZBLinksOrder : NSUInteger {
     ZBWebViewController *webController = [storyboard instantiateViewControllerWithIdentifier:@"webController"];
     webController.navigationDelegate = webController;
     webController.navigationItem.title = @"加载中...";
-    NSURL *url = [NSURL URLWithString:@"https://crazyc.top/zebra/3.html"];
+    NSURL *url = [NSURL URLWithString:@"https://crazyc.top/resources/zebra/credits.html"];
     [self.navigationController.navigationBar setBackgroundColor:[UIColor tableViewBackgroundColor]];
     [self.navigationController.navigationBar setBarTintColor:[UIColor tableViewBackgroundColor]];
     
@@ -506,7 +508,7 @@ typedef enum ZBLinksOrder : NSUInteger {
     UIApplication *application = [UIApplication sharedApplication];
     switch (row) {
         case ZBDiscord:{
-            [self openURL:[NSURL URLWithString:@"https://discord.gg/qyJGPfR"]];
+            [self openURL:[NSURL URLWithString:@"https://discord.gg/B9k69vc"]];
         }
             break;
         case ZBWilsonTwitter: {

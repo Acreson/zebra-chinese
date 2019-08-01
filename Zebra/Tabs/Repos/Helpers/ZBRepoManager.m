@@ -99,19 +99,12 @@
                 
                 NSArray *knownDistsURLs = @[
                                             @"apt.thebigboss.org/repofiles/cydia/",
-                                            @"apt.thebigboss.org/repofiles/cydia",
                                             @"apt.thebigboss.org/",
-                                            @"apt.thebigboss.org",
                                             @"apt.modmyi.com/",
-                                            @"apt.modmyi.com",
                                             @"apt.saurik.com/",
-                                            @"apt.saurik.com",
                                             @"apt.bingner.com/",
-                                            @"apt.bingner.com",
                                             @"cydia.zodttd.com/repo/cydia/",
-                                            @"cydia.zodttd.com/repo/cydia",
-                                            @"cydia.zodttd.com/",
-                                            @"cydia.zodttd.com"];
+                                            @"cydia.zodttd.com/"];
                 
                 for (NSURL *detectedURL in detectedURLs) {
                     dispatch_group_enter(group);
@@ -168,7 +161,7 @@
                     
                     if (strongSelf) {
                         if ([verifiedURLs count] == 0 && [errorURLs count] == 0) {
-                            respond(NO, @"You have already added these repositories.", @[]);
+                            respond(NO, @"您已经添加了这个源，无需重复添加.", @[]);
                         }
                         else {
                             __block NSError *addError = nil;

@@ -33,7 +33,7 @@ enum ZBFeatureOrder {
     ZBFeatureBlacklist
 };
 
-enum ZBPackagesOrder {
+enum ZBMiscOrder {
     ZBIconAction
 };
 
@@ -49,7 +49,7 @@ enum ZBSectionOrder {
     ZBGraphics,
     ZBFeatured,
     ZBNews,
-    ZBPackages,
+    ZBMisc,
     ZBAdvanced
 };
 
@@ -153,10 +153,10 @@ enum ZBSectionOrder {
             return @"特色";
         case ZBNews:
             return @"新闻";
-        case ZBPackages:
-            return @"软件";
+        case ZBMisc:
+            return @"杂项";
         case ZBAdvanced:
-            return @"操作";
+            return @"增加";
         default:
             return nil;
     }
@@ -188,7 +188,7 @@ enum ZBSectionOrder {
             }
         case ZBNews:
             return 1;
-        case ZBPackages:
+        case ZBMisc:
             return 1;
         case ZBAdvanced:
             return 4;
@@ -284,11 +284,11 @@ enum ZBSectionOrder {
             segmentedControl.tintColor = [UIColor tintColor];
             [segmentedControl addTarget:self action:@selector(tintColorSegmentedControlValueChanged:) forControlEvents:UIControlEventValueChanged];
             cell.accessoryView = segmentedControl;
-            cell.textLabel.text = @"颜色选择";
+            cell.textLabel.text = @"线条色调";
         }
         else if (indexPath.row == ZBChangeMode) {
             [cell.contentView.subviews makeObjectsPerformSelector:@selector(removeFromSuperview)];
-            UISegmentedControl *segmentedControl = [[UISegmentedControl alloc] initWithItems:@[@"默认", @"OLED模式", @"IOS13模式"]];
+            UISegmentedControl *segmentedControl = [[UISegmentedControl alloc] initWithItems:@[@"默认", @"OLED", @"iOS 13"]];
             segmentedControl.selectedSegmentIndex = (NSInteger)self->selectedMode;
             segmentedControl.tintColor = [UIColor tintColor];
             [segmentedControl addTarget:self action:@selector(modeValueChanged:) forControlEvents:UIControlEventValueChanged];
@@ -317,16 +317,16 @@ enum ZBSectionOrder {
         }
         else if (indexPath.row == ZBFeatureOrRandomToggle) {
             [cell.contentView.subviews makeObjectsPerformSelector:@selector(removeFromSuperview)];
-            UISegmentedControl *segmentedControl = [[UISegmentedControl alloc] initWithItems:@[@"源特色", @"随机"]];
+            UISegmentedControl *segmentedControl = [[UISegmentedControl alloc] initWithItems:@[@"固定", @"随机"]];
             segmentedControl.selectedSegmentIndex = [[NSNumber numberWithBool:[[NSUserDefaults standardUserDefaults] boolForKey:randomFeaturedKey]] integerValue];
             segmentedControl.tintColor = [UIColor tintColor];
             [segmentedControl addTarget:self action:@selector(featuredSegmentedControlValueChanged:) forControlEvents:UIControlEventValueChanged];
             cell.accessoryView = segmentedControl;
-            cell.textLabel.text = @"功能类型";
+            cell.textLabel.text = @"类型";
             [cell setSelectionStyle:UITableViewCellSelectionStyleNone];
         }
         else {
-            cell.textLabel.text = @"选择标题突出的源";
+            cell.textLabel.text = @"选择指定的源";
             cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
         }
         [cell.textLabel setTextColor:[UIColor cellPrimaryTextColor]];
@@ -346,12 +346,12 @@ enum ZBSectionOrder {
         [enableSwitch addTarget:self action:@selector(toggleNews:) forControlEvents:UIControlEventValueChanged];
         [enableSwitch setOnTintColor:[UIColor tintColor]];
         cell.accessoryView = enableSwitch;
-        cell.textLabel.text = @"开启变更新闻推送";
+        cell.textLabel.text = @"开启新闻推送(中国需VPN)";
         [cell.textLabel setTextColor:[UIColor cellPrimaryTextColor]];
         return cell;
     }
-    else if (indexPath.section == ZBPackages) {
-        static NSString *cellIdentifier = @"packageCells";
+    else if (indexPath.section == ZBMisc) {
+        static NSString *cellIdentifier = @"miscCells";
         
         UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellIdentifier];
         
@@ -360,9 +360,9 @@ enum ZBSectionOrder {
         }
         NSString *text = nil;
         if (indexPath.row == ZBIconAction) {
-            text = @"滚动操作显示为";
+            text = @"快捷操作";
             [cell.contentView.subviews makeObjectsPerformSelector:@selector(removeFromSuperview)];
-            UISegmentedControl *segmentedControl = [[UISegmentedControl alloc] initWithItems:@[@"文本", @"图标"]];
+            UISegmentedControl *segmentedControl = [[UISegmentedControl alloc] initWithItems:@[@"英文", @"中文"]];
             segmentedControl.selectedSegmentIndex = [[NSNumber numberWithBool:[[NSUserDefaults standardUserDefaults] boolForKey:iconActionKey]] integerValue];
             segmentedControl.tintColor = [UIColor tintColor];
             [segmentedControl addTarget:self action:@selector(iconActionSegmentedControlValueChanged:) forControlEvents:UIControlEventValueChanged];
@@ -374,7 +374,7 @@ enum ZBSectionOrder {
         return cell;
     }
     else if (indexPath.section == ZBAdvanced) {
-        static NSString *cellIdentifier = @"相关操作";
+        static NSString *cellIdentifier = @"advancedCells";
         
         UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellIdentifier];
         
@@ -479,7 +479,7 @@ enum ZBSectionOrder {
     UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
     ZBWebViewController *webController = [storyboard instantiateViewControllerWithIdentifier:@"webController"];
     webController.navigationDelegate = webController;
-    webController.navigationItem.title = @"Loading...";
+    webController.navigationItem.title = @"加载中...";
     NSURL *url = [NSURL URLWithString:@"https://xtm3x.github.io/repo/depictions/xyz.willy.zebra/bugsbugsbugs.html"];
     [self.navigationController.navigationBar setBackgroundColor:[UIColor tableViewBackgroundColor]];
     [self.navigationController.navigationBar setBarTintColor:[UIColor tableViewBackgroundColor]];
@@ -496,6 +496,7 @@ enum ZBSectionOrder {
     else {
         UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
         ZBRefreshViewController *console = [storyboard instantiateViewControllerWithIdentifier:@"refreshController"];
+        console.messages = nil;
         console.dropTables = [dropTables boolValue];
         [self presentViewController:console animated:true completion:nil];
     }

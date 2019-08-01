@@ -26,6 +26,7 @@
     NSMutableArray *bundlePaths;
     NSMutableDictionary <NSString *, NSNumber *> *downloadingMap;
     ZBDownloadManager *downloadManager;
+    BOOL hasZebraUpdated;
 }
 @end
 
@@ -36,9 +37,8 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
 
-    [self setTitle:@"Console"];
+    [self setTitle:@"控制台"];
     [self.navigationController.navigationBar setBarStyle:UIBarStyleBlack];
-    [self.navigationItem setHidesBackButton:true animated:true];
     
     queue = [ZBQueue sharedInstance];
     stage = -1;
@@ -52,7 +52,7 @@
     _progressView.hidden = YES;
     _progressText.text = nil;
     _progressText.hidden = YES;
-    UIBarButtonItem *cancelButton = [[UIBarButtonItem alloc] initWithTitle:@"Cancel" style:UIBarButtonItemStylePlain target:self action:@selector(cancel)];
+    UIBarButtonItem *cancelButton = [[UIBarButtonItem alloc] initWithTitle:@"取消" style:UIBarButtonItemStylePlain target:self action:@selector(cancel)];
     self.navigationItem.leftBarButtonItem = cancelButton;
 }
 
@@ -80,7 +80,7 @@
 - (void)downloadPackages {
     NSArray *packages = [queue packagesToDownload];
     
-    [self writeToConsole:@"Downloading Packages.\n" atLevel:ZBLogLevelInfo];
+    [self writeToConsole:@"下载软件包中...安装插件的过程中切勿锁屏/黑屏...\n" atLevel:ZBLogLevelInfo];
     downloadManager = [[ZBDownloadManager alloc] init];
     downloadManager.downloadDelegate = self;
     
@@ -105,7 +105,13 @@
                         BOOL update = [ZBPackage containsApp:packageID];
                         if (update) {
                             needsIconCacheUpdate = true;
-                            [bundlePaths addObject:[ZBPackage pathForApplication:packageID]];
+                            NSString *path = [ZBPackage pathForApplication:packageID];
+                            if (path) {
+                                [bundlePaths addObject:path];
+                                if (!self->hasZebraUpdated && [packageID isEqualToString:[ZBAppDelegate bundleID]]) {
+                                    self->hasZebraUpdated = YES;
+                                }
+                            }
                         }
                         
                         if (!needsRespring) {
@@ -144,7 +150,7 @@
     }
     else {
         if (continueWithActions) {
-            _progressText.text = @"Performing actions...";
+            _progressText.text = @"执行操作中...";
             self.navigationItem.leftBarButtonItem = nil;
             NSOrderedSet *actions = [queue tasks:debs];
             
@@ -162,6 +168,9 @@
                                 NSString *path = [ZBPackage pathForApplication:packageID];
                                 if (path) {
                                     [bundlePaths addObject:path];
+                                    if (!self->hasZebraUpdated && [packageID isEqualToString:[ZBAppDelegate bundleID]]) {
+                                        self->hasZebraUpdated = YES;
+                                    }
                                 }
                             }
                             
@@ -237,16 +246,16 @@
     }
     
     if (needsIconCacheUpdate) {
-        [self writeToConsole:@"Updating icon cache...\n" atLevel:ZBLogLevelInfo];
+        [self writeToConsole:@"更新图标缓存中...\n" atLevel:ZBLogLevelInfo];
         NSMutableArray *arguments = [NSMutableArray new];
         if ([uicaches count] + [bundlePaths count] > 1) {
             [arguments addObject:@"-a"];
-            [self writeToConsole:@"This may take awhile and Zebra may crash. It is okay if it does.\n" atLevel:ZBLogLevelWarning];
+            [self writeToConsole:@"这可能需要一段时间，斑马可能会崩溃。\n即便是这样也没关系.\n斑马没那么脆弱.就是那么屌。\n" atLevel:ZBLogLevelWarning];
         }
         else {
             [arguments addObject:@"-p"];
             for (NSString *packageID in uicaches) {
-                if ([packageID isEqualToString:@"-p"]) continue;
+                if ([packageID isEqualToString:@"-p"] || [packageID isEqualToString:[ZBAppDelegate bundleID]]) continue;
                 
                 NSString *bundlePath = [ZBPackage pathForApplication:packageID];
                 if (bundlePath != NULL) [bundlePaths addObject:bundlePath];
@@ -258,36 +267,45 @@
             [ZBDevice uicache:arguments observer:self];
         }
         else {
-            [self writeToConsole:@"uicache is not available on the simulator\n" atLevel:ZBLogLevelWarning];
+            [self writeToConsole:@"刷新图标缓存不适用于模拟器操作\n" atLevel:ZBLogLevelWarning];
         }
     }
     
     [self removeAllDebs];
     [self updateStatus:4];
-    
+    [self updateCompleteButton];
+}
+
+- (void)updateCompleteButton {
+    [self.navigationItem setHidesBackButton:YES animated:NO];
     dispatch_async(dispatch_get_main_queue(), ^{
         self->_completeButton.hidden = false;
         self->_progressText.text = nil;
         
-        if (self->needsRespring) {
+        if (self->hasZebraUpdated) {
             [self addCloseButton];
-            
-            [self->_completeButton setTitle:@"Restart SpringBoard" forState:UIControlStateNormal];
+            [self->_completeButton setTitle:@"关闭 Zebra" forState:UIControlStateNormal];
+            [self->_completeButton addTarget:self action:@selector(closeZebra) forControlEvents:UIControlEventTouchUpInside];
+        }
+        else if (self->needsRespring) {
+            [self addCloseButton];
+            [self->_completeButton setTitle:@"重启 SpringBoard" forState:UIControlStateNormal];
             [self->_completeButton addTarget:self action:@selector(restartSpringBoard) forControlEvents:UIControlEventTouchUpInside];
         }
         else {
-            [self->_completeButton setTitle:@"Done" forState:UIControlStateNormal];
+            [self->_completeButton setTitle:@"返回 Zebra" forState:UIControlStateNormal];
         }
     });
 }
 
 - (void)addCloseButton {
-    UIBarButtonItem *closeButton = [[UIBarButtonItem alloc] initWithTitle:@"Close" style:UIBarButtonItemStylePlain target:self action:@selector(goodbye)];
+    UIBarButtonItem *closeButton = [[UIBarButtonItem alloc] initWithTitle:@"关闭" style:UIBarButtonItemStylePlain target:self action:@selector(goodbye)];
     self.navigationController.navigationBar.tintColor = [UIColor whiteColor];
     self.navigationItem.rightBarButtonItem = closeButton;
 }
 
 - (void)cancel {
+    [self.navigationItem setHidesBackButton:YES animated:NO];
     [downloadManager stopAllDownloads];
     [downloadingMap removeAllObjects];
     self.navigationItem.leftBarButtonItem = nil;
@@ -303,6 +321,13 @@
 - (void)goodbye {
     [self clearConsole];
     [self dismissViewControllerAnimated:true completion:nil];
+}
+
+- (void)closeZebra {
+    if (![ZBDevice needsSimulation]) {
+        [ZBDevice uicache:@[@"-p", @"/Applications/Zebra.app"] observer:self];
+    }
+    exit(1); // Correct?
 }
 
 - (void)restartSpringBoard {
@@ -331,33 +356,28 @@
 }
 
 - (void)updateStatus:(int)s {
+    stage = s;
     switch (s) {
         case 0:
-            stage = 0;
-            [self setTitle:@"Installing"];
-            [self writeToConsole:@"Installing Packages...\n" atLevel:ZBLogLevelInfo];
+            [self setTitle:@"安装中"];
+            [self writeToConsole:@"安装软件包中...\n" atLevel:ZBLogLevelInfo];
             break;
         case 1:
-            stage = 1;
-            [self setTitle:@"Removing"];
-            [self writeToConsole:@"Removing Packages...\n" atLevel:ZBLogLevelInfo];
+            [self setTitle:@"移除中"];
+            [self writeToConsole:@"移除软件包中...\n" atLevel:ZBLogLevelInfo];
             break;
         case 2:
-            stage = 2;
-            [self setTitle:@"Reinstalling"];
-            [self writeToConsole:@"Reinstalling Packages...\n" atLevel:ZBLogLevelInfo];
+            [self setTitle:@"重装中"];
+            [self writeToConsole:@"重装软件包中...\n" atLevel:ZBLogLevelInfo];
             break;
         case 3:
-            stage = 3;
-            [self setTitle:@"Upgrading"];
-            [self writeToConsole:@"Upgrading Packages...\n" atLevel:ZBLogLevelInfo];
+            [self setTitle:@"更新中"];
+            [self writeToConsole:@"更新软件包中...\n" atLevel:ZBLogLevelInfo];
             break;
         case 4:
-            stage = 4;
-            [self setTitle:@"Done!"];
-            [self writeToConsole:@"Done!\n" atLevel:ZBLogLevelInfo];
+            [self setTitle:@"完成!"];
+            [self writeToConsole:@"完成!\n" atLevel:ZBLogLevelInfo];
             break;
-
         default:
             break;
     }
@@ -373,7 +393,7 @@
         [self writeToConsole:str atLevel:ZBLogLevelDescript];
     }
 }
-
+///检测dpkg错误的
 - (void)receivedErrorData:(NSNotification *)notif {
     NSFileHandle *fh = [notif object];
     NSData *data = [fh availableData];
@@ -381,7 +401,7 @@
     if (data.length) {
         [fh waitForDataInBackgroundAndNotify];
         NSString *str = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-        if ([str rangeOfString:@"warning"].location != NSNotFound) {
+        if ([str rangeOfString:@"无视错误"].location != NSNotFound) {
             str = [str stringByReplacingOccurrencesOfString:@"dpkg: " withString:@""];
             [self writeToConsole:str atLevel:ZBLogLevelWarning];
         }
@@ -447,17 +467,26 @@
     }
     totalProgress /= downloadingMap.count;
     [_progressView setProgress:totalProgress animated:YES];
-    _progressText.text = [NSString stringWithFormat:@"Downloading: %.1f%%", totalProgress * 100];
+    _progressText.text = [NSString stringWithFormat:@"下载中: %.1f%%", totalProgress * 100];
 }
 
-- (void)predator:(nonnull ZBDownloadManager *)downloadManager finishedAllDownloads:(nonnull NSDictionary *)filenames {
-    NSArray *debs = [filenames objectForKey:@"debs"];
+- (void)predator:(nonnull ZBDownloadManager *)downloadManager finishedAllDownloads:(NSDictionary *)filenames {
     _progressText.text = nil;
-    [self performSelectorInBackground:@selector(performActions:) withObject:debs];
+    if (filenames.count) {
+        NSArray *debs = [filenames objectForKey:@"debs"];
+        [self performSelectorInBackground:@selector(performActions:) withObject:debs];
+    }
+    else {
+        continueWithActions = false;
+        [self cancel];
+        [self writeToConsole:@"没有下载任何东西.\n因为" atLevel:ZBLogLevelWarning];
+        [self updateStatus:4];
+        [self updateCompleteButton];
+    }
 }
 
 - (void)predator:(nonnull ZBDownloadManager *)downloadManager startedDownloadForFile:(nonnull NSString *)filename {
-    [self writeToConsole:[NSString stringWithFormat:@"Downloading %@\n", filename] atLevel:ZBLogLevelDescript];
+    [self writeToConsole:[NSString stringWithFormat:@"下载中 %@\n", filename] atLevel:ZBLogLevelDescript];
 }
 
 - (void)predator:(nonnull ZBDownloadManager *)downloadManager finishedDownloadForFile:(NSString *_Nullable)filename withError:(NSError * _Nullable)error {
@@ -466,23 +495,29 @@
         [self writeToConsole:[error.localizedDescription stringByAppendingString:@"\n"] atLevel:ZBLogLevelError];
     }
     else if (filename) {
-        [self writeToConsole:[NSString stringWithFormat:@"Done %@\n", filename] atLevel:ZBLogLevelDescript];
+        [self writeToConsole:[NSString stringWithFormat:@"完成 %@\n", filename] atLevel:ZBLogLevelDescript];
     }
 }
 
 #pragma mark - Database Delegate
 
+- (void)postStatusUpdate:(NSString *)status atLevel:(ZBLogLevel)level {
+    [self writeToConsole:status atLevel:level];
+}
+
 - (void)databaseStartedUpdate {
-    [self writeToConsole:@"Importing local packages.\n" atLevel:ZBLogLevelInfo];
+    [self writeToConsole:@"导入软件包中.\n" atLevel:ZBLogLevelInfo];
 }
 
 - (void)databaseCompletedUpdate:(int)packageUpdates {
-    [self writeToConsole:@"Finished importing local packages.\n" atLevel:ZBLogLevelInfo];
+    [self writeToConsole:@"导入完成.\n" atLevel:ZBLogLevelInfo];
     
     NSLog(@"[Zebra] %d updates available.", packageUpdates);
     
-    ZBTabBarController *tabController = (ZBTabBarController *)[[[UIApplication sharedApplication] delegate] window].rootViewController;
-    [tabController setPackageUpdateBadgeValue:packageUpdates];
+    if (packageUpdates != -1) {
+        ZBTabBarController *tabController = (ZBTabBarController *)[[[UIApplication sharedApplication] delegate] window].rootViewController;
+        [tabController setPackageUpdateBadgeValue:packageUpdates];
+    }
     
     [self finishUp];
 }

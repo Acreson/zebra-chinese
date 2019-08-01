@@ -12,7 +12,7 @@
 "31H-5B-Xgc.title" = "搜索";
 
 /* Class = "UINavigationItem"; title = "Alternate Icons"; ObjectID = "4hP-li-yF0"; */
-"4hP-li-yF0.title" = "变更图标";
+"4hP-li-yF0.title" = "变换图标";
 
 /* Class = "UIBarButtonItem"; title = "Add"; ObjectID = "6kO-W0-z9d"; */
 "6kO-W0-z9d.title" = "添加";
@@ -27,7 +27,7 @@
 "Bpj-dl-pWU.title" = "关闭";
 
 /* Class = "UILabel"; text = "Progress Text"; ObjectID = "BuP-O1-Zgo"; */
-"BuP-O1-Zgo.text" = "进步文本";
+"BuP-O1-Zgo.text" = "进步的文本";
 
 /* Class = "UITableViewController"; title = "Wish List"; ObjectID = "EZp-oK-GMJ"; */
 "EZp-oK-GMJ.title" = "愿望清单";
@@ -78,7 +78,7 @@
 "gE6-EQ-6Uj.title" = "软件包";
 
 /* Class = "UILabel"; text = "Email"; ObjectID = "gzb-2p-Jk6"; */
-"gzb-2p-Jk6.text" = "又想";
+"gzb-2p-Jk6.text" = "邮箱";
 
 /* Class = "UIBarButtonItem"; title = "Install"; ObjectID = "hET-rE-7Dw"; */
 "hET-rE-7Dw.title" = "安装";
@@ -87,7 +87,7 @@
 "hXW-6i-kIV.title" = "暗黑模式";
 
 /* Class = "UILabel"; text = "Title"; ObjectID = "j1j-pb-Xsj"; */
-"j1j-pb-Xsj.text" = "列表";
+"j1j-pb-Xsj.text" = "标题";
 
 /* Class = "UINavigationItem"; title = "Add Repo(s)"; ObjectID = "mbr-uZ-nXO"; */
 "mbr-uZ-nXO.title" = "添加源(s)";
@@ -96,10 +96,10 @@
 "qF9-ad-Phi.title" = "关于";
 
 /* Class = "UILabel"; text = "Title"; ObjectID = "rZ1-lO-iJO"; */
-"rZ1-lO-iJO.text" = "列表";
+"rZ1-lO-iJO.text" = "标题";
 
 /* Class = "UILabel"; text = "Title"; ObjectID = "sOd-6W-q9J"; */
-"sOd-6W-q9J.text" = "列表";
+"sOd-6W-q9J.text" = "标题";
 
 /* Class = "UINavigationItem"; title = "Queue"; ObjectID = "uSZ-TC-nHR"; */
 "uSZ-TC-nHR.title" = "队列";
@@ -108,7 +108,7 @@
 "utG-bq-Bqo.text" = "详情";
 
 /* Class = "UIBarButtonItem"; title = "Confirm"; ObjectID = "vfP-8Y-pVN"; */
-"vfP-8Y-pVN.title" = "继续";
+"vfP-8Y-pVN.title" = "确认";
 
-/* Class = "UIButton"; normalTitle = "Done"; ObjectID = "zte-bN-R1X"; */
-"zte-bN-R1X.normalTitle" = "完成";
+/* Class = "UIButton"; normalTitle = "Cancel"; ObjectID = "zte-bN-R1X"; */
+"zte-bN-R1X.normalTitle" = "取消";

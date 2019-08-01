@@ -9,17 +9,18 @@
 #import <ZBDevice.h>
 #import <ZBAppDelegate.h>
 #import <ZBTabBarController.h>
+#import <UIColor+GlobalColors.h>
 #import "ZBRepoListTableViewController.h"
-#import <Repos/Controllers/ZBRepoSectionsListTableViewController.h>
+#import "ZBAddRepoViewController.h"
+#import "ZBAddRepoDelegate.h"
 #import <Database/ZBDatabaseManager.h>
+#import <Database/ZBRefreshViewController.h>
 #import <Repos/Helpers/ZBRepoManager.h>
 #import <Repos/Helpers/ZBRepo.h>
 #import <Repos/Helpers/ZBRepoTableViewCell.h>
-#import <Database/ZBRefreshViewController.h>
-#import <UIColor+GlobalColors.h>
-#import "ZBAddRepoViewController.h"
-#import "ZBAddRepoDelegate.h"
+#import <Repos/Controllers/ZBRepoSectionsListTableViewController.h>
 #import <Packages/Helpers/ZBPackage.h>
+#import <Queue/ZBQueue.h>
 
 @import SDWebImage;
 
@@ -31,9 +32,9 @@
     BOOL askedToAddFromClipboard;
     BOOL isRefreshingTable;
     NSString *lastPaste;
+    ZBRepoManager *repoManager;
+    ZBQueue *queue;
 }
-
-@property (nonatomic, retain) ZBRepoManager *repoManager;
 
 @end
 
@@ -44,7 +45,8 @@
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(darkMode:) name:@"darkMode" object:nil];
     sources = [[self.databaseManager repos] mutableCopy];
     sourceIndexes = [NSMutableDictionary new];
-    self.repoManager = [ZBRepoManager sharedInstance];
+    queue = [ZBQueue sharedInstance];
+    repoManager = [ZBRepoManager sharedInstance];
     
     self.navigationController.navigationBar.tintColor = [UIColor tintColor];
     [self layoutNavigationButtons];
@@ -144,17 +146,17 @@
 
 - (void)clearAllSpinners {
     [((ZBTabBarController *)self.tabBarController).repoBusyList removeAllObjects];
+    [self refreshTable];
 }
 
 - (void)editMode:(id)sender {
-    [self setEditing:!self.editing animated:true];
+    [self setEditing:!self.editing animated:YES];
     [self layoutNavigationButtons];
 }
 
 - (void)refreshTable {
     if (isRefreshingTable)
         return;
-    [self clearAllSpinners];
     self->sources = [[self.databaseManager repos] mutableCopy];
     dispatch_async(dispatch_get_main_queue(), ^{
         self->isRefreshingTable = YES;
@@ -237,17 +239,17 @@
     
     [alertController addAction:[UIAlertAction actionWithTitle:@"不" style:UIAlertActionStyleCancel handler:nil]];
     [alertController addAction:[UIAlertAction actionWithTitle:@"添加" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-        ZBRepoManager *repoManager = [ZBRepoManager sharedInstance];
         NSString *sourceURL = url.absoluteString;
         
-        UIAlertController *wait = [UIAlertController alertControllerWithTitle:@"请稍等..." message:@"验证软件源中" preferredStyle:UIAlertControllerStyleAlert];
+        UIAlertController *wait = [UIAlertController alertControllerWithTitle:@"请稍等..." message:@"验证软件源中..." preferredStyle:UIAlertControllerStyleAlert];
         [self presentViewController:wait animated:true completion:nil];
         
-        [repoManager addSourceWithString:sourceURL response:^(BOOL success, NSString *error, NSURL *url) {
+        __weak typeof(self) weakSelf = self;
+        [self->repoManager addSourceWithString:sourceURL response:^(BOOL success, NSString *error, NSURL *url) {
             if (!success) {
                 NSLog(@"[Zebra] Could not add source %@ due to error %@", url.absoluteString, error);
                 [wait dismissViewControllerAnimated:true completion:^{
-                    [self presentVerificationFailedAlert:error url:url present:NO];
+                    [weakSelf presentVerificationFailedAlert:error url:url present:NO];
                 }];
             }
             else {
@@ -258,7 +260,7 @@
                     dispatch_async(dispatch_get_main_queue(), ^{
                         UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
                         UIViewController *console = [storyboard instantiateViewControllerWithIdentifier:@"refreshController"];
-                        [self presentViewController:console animated:true completion:nil];
+                        [weakSelf presentViewController:console animated:true completion:nil];
                     });
                 }];
             }
@@ -270,7 +272,7 @@
 
 - (void)presentVerificationFailedAlert:(NSString *)message url:(NSURL *)url present:(BOOL)present {
     dispatch_async(dispatch_get_main_queue(), ^{
-        UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"Unable to verify Repo" message:message preferredStyle:UIAlertControllerStyleAlert];
+        UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"未验证的源" message:message preferredStyle:UIAlertControllerStyleAlert];
         alertController.view.tintColor = [UIColor tintColor];
         UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"Ok" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
             if (present) {
@@ -288,7 +290,7 @@
     
     __weak typeof(self) weakSelf = self;
     
-    [self.repoManager addSourcesFromString:text response:^(BOOL success, NSString * _Nonnull error, NSArray<NSURL *> * _Nonnull failedURLs) {
+    [self->repoManager addSourcesFromString:text response:^(BOOL success, NSString * _Nonnull error, NSArray<NSURL *> * _Nonnull failedURLs) {
         [weakSelf dismissViewControllerAnimated:YES completion:^{
             if (!success) {
                 UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:@"Error" message:error preferredStyle:UIAlertControllerStyleAlert];
@@ -430,13 +432,16 @@
     return [repo canDelete] ? UITableViewCellEditingStyleDelete : UITableViewCellEditingStyleNone;
 }
 
+
+
+
 - (NSArray *)tableView:(UITableView *)tableView editActionsForRowAtIndexPath:(NSIndexPath *)indexPath {
     ZBRepo *repo = [self sourceAtIndexPath:indexPath];
     NSMutableArray *actions = [NSMutableArray array];
     if ([repo canDelete]) {
-        UITableViewRowAction *deleteAction = [UITableViewRowAction rowActionWithStyle:UITableViewRowActionStyleDestructive title:@"删除" handler:^(UITableViewRowAction * _Nonnull action, NSIndexPath * _Nonnull indexPath) {
+        UITableViewRowAction *deleteAction = [UITableViewRowAction rowActionWithStyle:UITableViewRowActionStyleDestructive title:[queue queueToKeyDisplayed:ZBQueueTypeRemove] handler:^(UITableViewRowAction * _Nonnull action, NSIndexPath * _Nonnull indexPath) {
             [self->sources removeObject:repo];
-            [self.repoManager deleteSource:repo];
+            [self->repoManager deleteSource:repo];
             [self tableView:tableView commitEditingStyle:UITableViewCellEditingStyleDelete forRowAtIndexPath:indexPath];
         }];
         [actions addObject:deleteAction];
@@ -450,7 +455,6 @@
     }
     return actions;
 }
-
  - (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath {
     if (editingStyle == UITableViewCellEditingStyleDelete) {
         [tableView beginUpdates];
@@ -603,9 +607,7 @@
         UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"Import Sources" message:urls preferredStyle:UIAlertControllerStyleAlert];
         
         UIAlertAction *yesAction = [UIAlertAction actionWithTitle:@"Yes" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-            ZBRepoManager *repoManager = [ZBRepoManager sharedInstance];
-            
-            [repoManager mergeSourcesFrom:url into:[ZBAppDelegate sourcesListURL] completion:^(NSError * _Nonnull error) {
+            [self->repoManager mergeSourcesFrom:url into:[ZBAppDelegate sourcesListURL] completion:^(NSError * _Nonnull error) {
                 if (error != NULL) {
                     NSLog(@"[Zebra] Error when merging sources from %@ into %@: %@", url, [ZBAppDelegate sourcesListURL], error);
                 }
@@ -649,9 +651,7 @@
         UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"Import Sources" message:urls preferredStyle:UIAlertControllerStyleAlert];
         
         UIAlertAction *yesAction = [UIAlertAction actionWithTitle:@"Yes" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-            ZBRepoManager *repoManager = [ZBRepoManager sharedInstance];
-            
-            [repoManager mergeSourcesFrom:url into:[ZBAppDelegate sourcesListURL] completion:^(NSError * _Nonnull error) {
+            [self->repoManager mergeSourcesFrom:url into:[ZBAppDelegate sourcesListURL] completion:^(NSError * _Nonnull error) {
                 if (error != NULL) {
                     NSLog(@"[Zebra] Error when merging sources from %@ into %@: %@", url, [ZBAppDelegate sourcesListURL], error);
                 }

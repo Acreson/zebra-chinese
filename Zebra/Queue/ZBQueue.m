@@ -95,17 +95,17 @@
     }
     switch (queue) {
         case ZBQueueTypeInstall:
-            return @"↓";
+            return @"安装";
         case ZBQueueTypeRemove:
-            return @"╳";
+            return @"移除";
         case ZBQueueTypeUpgrade:
-            return @"↑";
+            return @"更新";
         case ZBQueueTypeReinstall:
-            return @"↺";
+            return @"重装";
         case ZBQueueTypeSelectable:
-            return @"⇵";
+            return @"选择版本";
         case ZBQueueTypeClear:
-            return @"⌧";
+            return @"清除";
         default:
             break;
     }
@@ -166,10 +166,15 @@
             if (package == NULL) return;
         }
         packageQueues[package.identifier] = @(queue);
+        BOOL added = NO;
         if (requiredPackage) {
-            [queueArray insertObject:package atIndex:[queueArray indexOfObject:requiredPackage]];
+            NSUInteger requiredPackageIndex = [queueArray indexOfObject:requiredPackage];
+            if (requiredPackageIndex != NSNotFound) {
+                [queueArray insertObject:package atIndex:requiredPackageIndex];
+                added = YES;
+            }
         }
-        else {
+        if (!added) {
             [queueArray addObject:package];
         }
         [self clearPackage:package inOtherQueuesExcept:queue];
@@ -189,7 +194,10 @@
             switch (queue) {
                 case ZBQueueTypeInstall:
                     [self enqueueDependenciesForPackage:package];
+                    [self checkForConflictionsWithPackage:package state:0];
+                    break;
                 case ZBQueueTypeUpgrade:
+                    [self enqueueDependenciesForPackage:package];
                     [self checkForConflictionsWithPackage:package state:0];
                     break;
                 case ZBQueueTypeRemove:
@@ -495,7 +503,7 @@
     NSMutableArray *packages = [NSMutableArray new];
     
     for (NSString *key in _managedQueue) {
-        if (![key isEqualToString:@"Remove"]) {
+        if (![key isEqualToString:@"移除"]) {
             [packages addObjectsFromArray:_managedQueue[key]];
         }
     }
@@ -505,7 +513,7 @@
 
 - (BOOL)needsHyena {
     for (NSString *key in _managedQueue) {
-        if (![key isEqualToString:@"Remove"] && [_managedQueue[key] count]) {
+        if (![key isEqualToString:@"移除"] && [_managedQueue[key] count]) {
             return true;
         }
     }

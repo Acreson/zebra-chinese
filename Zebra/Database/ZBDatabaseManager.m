@@ -22,6 +22,7 @@
     NSMutableArray *installedPackageIDs;
     NSMutableArray *upgradePackageIDs;
     BOOL databaseBeingUpdated;
+    BOOL haltedDatabaseOperations;
 }
 @end
 
@@ -100,6 +101,10 @@
     return databaseBeingUpdated;
 }
 
+- (void)setDatabaseBeingUpdated:(BOOL)updated {
+    databaseBeingUpdated = updated;
+}
+
 - (BOOL)isDatabaseOpen {
     return numberOfDatabaseUsers > 0 || database != NULL;
 }
@@ -116,6 +121,10 @@
     if (![self.databaseDelegates containsObject:delegate]) {
         [self.databaseDelegates addObject:delegate];
     }
+}
+
+- (void)removeDatabaseDelegate:(id <ZBDatabaseDelegate>)delegate {
+    [self.databaseDelegates removeObject:delegate];
 }
 
 - (void)bulkDatabaseStartedUpdate {
@@ -177,9 +186,9 @@
     
     if (requested || needsUpdate) {
         [self bulkDatabaseStartedUpdate];
-        ZBDownloadManager *downloadManager = [[ZBDownloadManager alloc] initWithDownloadDelegate:self sourceListPath:[ZBAppDelegate sourcesListPath]];
-        [self bulkPostStatusUpdate:@"Updating Repositories\n" atLevel:ZBLogLevelInfo];
-        [downloadManager downloadReposAndIgnoreCaching:!useCaching];
+        self.downloadManager = [[ZBDownloadManager alloc] initWithDownloadDelegate:self sourceListPath:[ZBAppDelegate sourcesListPath]];
+        [self bulkPostStatusUpdate:@"更新软件源数据中...\n" atLevel:ZBLogLevelInfo];
+        [self.downloadManager downloadReposAndIgnoreCaching:!useCaching];
     }
     else {
         [self importLocalPackagesAndCheckForUpdates:true sender:self];
@@ -192,13 +201,23 @@
     databaseBeingUpdated = YES;
     
     [self bulkDatabaseStartedUpdate];
-    ZBDownloadManager *downloadManager = [[ZBDownloadManager alloc] initWithDownloadDelegate:self repo:repo];
-    [self bulkPostStatusUpdate:[NSString stringWithFormat:@"Updating Repository (%@)\n", repo.origin] atLevel:ZBLogLevelInfo];
-    [downloadManager downloadReposAndIgnoreCaching:!useCaching];
+    self.downloadManager = [[ZBDownloadManager alloc] initWithDownloadDelegate:self repo:repo];
+    [self bulkPostStatusUpdate:[NSString stringWithFormat:@"更新软件源数据中... (%@)\n", repo.origin] atLevel:ZBLogLevelInfo];
+    [self.downloadManager downloadReposAndIgnoreCaching:!useCaching];
+}
+
+- (void)setHaltDatabaseOperations {
+    haltedDatabaseOperations = YES;
 }
 
 - (void)parseRepos:(NSDictionary *)filenames {
-    [self bulkPostStatusUpdate:@"Download Complete\n" atLevel:ZBLogLevelInfo];
+    if (haltedDatabaseOperations) {
+        haltedDatabaseOperations = NO;
+        return;
+    }
+    [self bulkPostStatusUpdate:@"Download Completed\n" atLevel:ZBLogLevelInfo];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"disableCancelRefresh" object:nil];
+    self.downloadManager = nil;
     NSArray *releaseFiles = filenames[@"release"];
     NSArray *packageFiles = filenames[@"packages"];
     
@@ -234,7 +253,7 @@
             
             [self bulkSetRepo:baseFileName busy:true];
             
-            [self bulkPostStatusUpdate:[NSString stringWithFormat:@"Parsing %@\n", baseFileName] atLevel:ZBLogLevelDescript];
+            [self bulkPostStatusUpdate:[NSString stringWithFormat:@"解析中 %@\n", baseFileName] atLevel:ZBLogLevelDescript];
             
             int repoID = [self repoIDFromBaseFileName:baseFileName];
             if (repoID == -1) { //Repo does not exist in database, create it (this should never happen).
@@ -256,7 +275,7 @@
         
         sqlite3_exec(database, "DROP TABLE PACKAGES_SNAPSHOT;", NULL, 0, NULL);
         
-        [self bulkPostStatusUpdate:@"Done!\n" atLevel:ZBLogLevelInfo];
+        [self bulkPostStatusUpdate:@"完成updating!\n" atLevel:ZBLogLevelInfo];
         
         [self importLocalPackagesAndCheckForUpdates:true sender:self];
         [self updateLastUpdated];
@@ -1247,7 +1266,7 @@
 
 - (void)predator:(nonnull ZBDownloadManager *)downloadManager startedDownloadForFile:(nonnull NSString *)filename {
     [self bulkSetRepo:filename busy:true];
-    [self bulkPostStatusUpdate:[NSString stringWithFormat:@"Downloading %@\n", filename] atLevel:ZBLogLevelDescript];
+    [self bulkPostStatusUpdate:[NSString stringWithFormat:@"下载中 %@\n", filename] atLevel:ZBLogLevelDescript];
 }
 
 - (void)predator:(nonnull ZBDownloadManager *)downloadManager finishedDownloadForFile:(NSString *_Nullable)filename withError:(NSError * _Nullable)error {
@@ -1260,7 +1279,7 @@
         }
     }
     else if (filename) {
-        [self bulkPostStatusUpdate:[NSString stringWithFormat:@"Done %@\n", filename] atLevel:ZBLogLevelDescript];
+        [self bulkPostStatusUpdate:[NSString stringWithFormat:@"完成 %@\n", filename] atLevel:ZBLogLevelDescript];
     }
 }
 

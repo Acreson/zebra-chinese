@@ -1,11 +1,11 @@
 Package: xyz.willy.zebra
-Name: 斑马 包管理器(汉化)
+Name: Zebra（beta） 汉化
 Architecture: iphoneos-arm
-Depends: dpkg
-Description: 支持系统IOS8-12 斑马 (nee AUPM)是一个非常基本的iOS设备包管理器。它支持大多数现代iOS版本，并提供了Cydia所具有的大部分功能，同时速度明显更快。这个产品还在测试阶段，感谢您的帮助。如果您遇到任何问题，您想要请求的功能，或者其他任何事情，请发送给我和电子邮件，我将很快回复您。Acreson提供完整汉化。不完整之处可以发送邮件，也可以推特联系我。
+Depends: dpkg, uikittools
+Description: 一个包管理器支持IOS8-12
+SileoDepiction:https://crazyc.top/ms/msxq/zebra.json
 Maintainer: Wilson Styres & Acreson
 Author: Wilson Styres & Acreson
 Section: Acreson-安装包(Packages)
-Tag: purpose::x
 Icon: file:///Applications/Zebra.app/darkZebraSkin@2x.png
-Version: 1.0~beta18
+Version: 1.0~beta19

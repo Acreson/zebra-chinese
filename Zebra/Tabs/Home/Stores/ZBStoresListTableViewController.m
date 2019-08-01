@@ -93,10 +93,10 @@
     cell.repoLabel.text = [source origin];
 
     if (![self checkAuthenticatedRepo:[_keychain stringForKey:[source baseURL]]]) {
-        cell.urlLabel.text = @"Login";
+        cell.urlLabel.text = @"登陆";
     }
     else {
-        cell.urlLabel.text = @"Purchases";
+        cell.urlLabel.text = @"购买";
     }
     [cell.iconImageView sd_setImageWithURL:[source iconURL] placeholderImage:[UIImage imageNamed:@"Unknown"]];
  

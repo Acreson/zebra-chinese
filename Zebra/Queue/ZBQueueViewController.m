@@ -25,7 +25,7 @@
     self.navigationController.navigationBar.tintColor = [UIColor tintColor];
     [self.tableView setSeparatorColor:[UIColor cellSeparatorColor]];
     [self refreshBarButtons];
-    self.title = @"Queue";
+    self.title = @"队列";
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -77,7 +77,7 @@
 
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
     NSString *title = [[_queue actionsToPerform] objectAtIndex:section];
-    if ([title isEqual:@"install"] || [title isEqual:@"Reinstall"] || [title isEqual:@"Upgrade"]) {
+    if ([title isEqual:@"Install"] || [title isEqual:@"Reinstall"] || [title isEqual:@"Upgrade"]) {
         ZBQueueType type = [_queue keyToQueue:title];
         if (type) {
             double totalDownloadSize = 0;
@@ -96,7 +96,7 @@
                     totalDownloadSize /= 1024;
                     unit = @"KB";
                 }
-                return [NSString stringWithFormat:@"%@ (Download Size: %.2f %@)", title, totalDownloadSize, unit];
+                return [NSString stringWithFormat:@"%@ (下载大小: %.2f %@)", title, totalDownloadSize, unit];
             }
         }
     }
@@ -135,7 +135,7 @@
             
             NSArray *failedQ = [_queue failedDepQueue];
             cell.textLabel.text = failedQ[indexPath.row][0];
-            cell.detailTextLabel.text = [NSString stringWithFormat:@"Could not resolve dependency for %@", [(ZBPackage *)failedQ[indexPath.row][1] name]];
+            cell.detailTextLabel.text = [NSString stringWithFormat:@"缺少以上依赖项与《%@》配合工作", [(ZBPackage *)failedQ[indexPath.row][1] name]];
             
             return cell;
         }
@@ -160,7 +160,7 @@
                     cell.detailTextLabel.text = [NSString stringWithFormat:@"%@ depends on %@", [confliction name], [package name]];
                     break;
                 default:
-                    cell.detailTextLabel.text = @"Are you proud of yourself?";
+                    cell.detailTextLabel.text = @"你为自己感到骄傲吗?";
                     break;
             }
             
@@ -201,7 +201,7 @@
         for (ZBPackage *package in requiredPackages) {
             [requiredPackageNames addObject:package.name];
         }
-        [details appendString:[NSString stringWithFormat:queue == ZBQueueTypeRemove ? @"(Removed by %@)" : @" (Required by %@)", [requiredPackageNames componentsJoinedByString:@", "]]];
+        [details appendString:[NSString stringWithFormat:queue == ZBQueueTypeRemove ? @" (Removed by %@)" : @" (Required by %@)", [requiredPackageNames componentsJoinedByString:@", "]]];
     }
     cell.detailTextLabel.text = details;
     

@@ -40,6 +40,7 @@ enum ZBPackageInfoOrder {
     UIProgressView *progressView;
     WKWebView *webView;
     BOOL presented;
+    BOOL navButtonsBeingConfigured;
 }
 @end
 
@@ -77,10 +78,9 @@ enum ZBPackageInfoOrder {
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    [self configureNavButton];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(reloadDepiction) name:@"darkMode" object:nil];
     if (presented) {
-        UIBarButtonItem *closeButton = [[UIBarButtonItem alloc] initWithTitle:@"Close" style:UIBarButtonItemStylePlain target:self action:@selector(goodbye)];
+        UIBarButtonItem *closeButton = [[UIBarButtonItem alloc] initWithTitle:@"关闭" style:UIBarButtonItemStylePlain target:self action:@selector(goodbye)];
         self.navigationItem.leftBarButtonItem = closeButton;
     }
     
@@ -123,15 +123,8 @@ enum ZBPackageInfoOrder {
     
     [self.tableView.tableHeaderView addSubview:progressView];
     [self.tableView setTableFooterView:webView];
-    //Web View Layout
     
-    /*[webView.topAnchor constraintEqualToAnchor:self.topLayoutGuide.bottomAnchor].active = YES;
-    [webView.bottomAnchor constraintEqualToAnchor:self.bottomLayoutGuide.topAnchor].active = YES;
-    [webView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor].active = YES;
-    [webView.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor].active = YES;
-    */
     //Progress View Layout
-    
     [progressView.trailingAnchor constraintEqualToAnchor:self.tableView.tableHeaderView.trailingAnchor].active = YES;
     [progressView.leadingAnchor constraintEqualToAnchor:self.tableView.tableHeaderView.leadingAnchor].active = YES;
     [progressView.topAnchor constraintEqualToAnchor:self.tableView.tableHeaderView.topAnchor].active = YES;
@@ -154,6 +147,7 @@ enum ZBPackageInfoOrder {
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
     [self.tableView setSeparatorColor:[UIColor cellSeparatorColor]];
+    [self configureNavButton];
 }
 
 - (void)prepDepictionLoading:(NSURL *)url {
@@ -227,7 +221,7 @@ enum ZBPackageInfoOrder {
         UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
         ZBWebViewController *filesController = [storyboard instantiateViewControllerWithIdentifier:@"webController"];
         filesController.navigationDelegate = self;
-        filesController.navigationItem.title = @"Installed Files";
+        filesController.navigationItem.title = @"已安装文件";
         NSURL *url = [[NSBundle mainBundle] URLForResource:action withExtension:@".html"];
         [filesController setValue:url forKey:@"_url"];
         
@@ -354,13 +348,17 @@ enum ZBPackageInfoOrder {
 }
 
 - (void)configureNavButton {
+    if (self->navButtonsBeingConfigured) {
+        return;
+    }
+    self->navButtonsBeingConfigured = YES;
     UICKeyChainStore *keychain = [UICKeyChainStore keyChainStoreWithService:[ZBAppDelegate bundleID] accessGroup:nil];
     if ([package isInstalled:false]) {
         if ([package isReinstallable]) {
             if ([package isPaid] && [keychain[[keychain stringForKey:[package repo].baseURL]] length] != 0) {
                 [self determinePaidPackage];
             } else {
-                UIBarButtonItem *modifyButton = [[UIBarButtonItem alloc] initWithTitle:@"Modify" style:UIBarButtonItemStylePlain target:self action:@selector(modifyPackage)];
+                UIBarButtonItem *modifyButton = [[UIBarButtonItem alloc] initWithTitle:@"更改" style:UIBarButtonItemStylePlain target:self action:@selector(modifyPackage)];
                 self.navigationItem.rightBarButtonItem = modifyButton;
             }
         }
@@ -377,6 +375,7 @@ enum ZBPackageInfoOrder {
         installButton.enabled = ![[ZBQueue sharedInstance] containsPackage:package queue:ZBQueueTypeInstall];
         self.navigationItem.rightBarButtonItem = installButton;
     }
+    self->navButtonsBeingConfigured = NO;
 }
 
 - (void)determinePaidPackage {
@@ -420,7 +419,7 @@ enum ZBPackageInfoOrder {
                     } else if (purchased && available && [self->package isInstalled:false] && [self->package isReinstallable]) {
                         self->package.sileoDownload = YES;
                         self.purchased = YES;
-                        title = @"Modify";
+                        title = @"更改";
                         selector = @selector(modifyPackage);
                     } else if (purchased && available && [self->package isInstalled:false] && ![self->package isReinstallable]) {
                         self->package.sileoDownload = YES;
@@ -489,14 +488,16 @@ enum ZBPackageInfoOrder {
                 [request setValue:[NSString stringWithFormat:@"%lu", (unsigned long)[requestData length]] forHTTPHeaderField:@"Content-Length"];
                 [request setHTTPBody: requestData];
                 [[session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
-                    NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:kNilOptions error:nil];
-                    NSLog(@"[Zebra] Package purchase response: %@",json);
-                    if ([json[@"status"] boolValue]) {
-                        [uiBusy stopAnimating];
-                        [self initPurchaseLink:json[@"url"]];
-                    }
-                    else {
-                        [self configureNavButton];
+                    if (data) {
+                        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:kNilOptions error:nil];
+                        NSLog(@"[Zebra] Package purchase response: %@",json);
+                        if ([json[@"status"] boolValue]) {
+                            [uiBusy stopAnimating];
+                            [self initPurchaseLink:json[@"url"]];
+                        }
+                        else {
+                            [self configureNavButton];
+                        }
                     }
                 }] resume];
             }
@@ -670,15 +671,15 @@ enum ZBPackageInfoOrder {
 - (void)checkWishList:(ZBPackage *)package {
     NSArray *wishList = [[NSUserDefaults standardUserDefaults] objectForKey:@"wishList"];
     if ([wishList containsObject:package.identifier]) {
-        infos[@"wishList"] = @"Remove from Wishlist";
+        infos[@"wishList"] = @"移除愿望清单";
     } else {
-        infos[@"wishList"] = @"Add to Wishlist";
+        infos[@"wishList"] = @"添加愿望清单";
     }
 }
 
 - (void)setMoreByText:(ZBPackage *)package {
     if (package.author) {
-        infos[@"moreBy"] = @"More by this Developer";
+        infos[@"moreBy"] = @"本作者的更多作品";
     } else {
         [infos removeObjectForKey:@"moreBy"];
     }
@@ -902,7 +903,7 @@ enum ZBPackageInfoOrder {
     if (indexPath.row == ZBPackageInfoInstalledFiles) {
         UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
         ZBInstalledFilesTableViewController *filesController = [storyboard instantiateViewControllerWithIdentifier:@"installedFilesController"];
-        filesController.navigationItem.title = @"Installed Files";
+        filesController.navigationItem.title = @"已安装文件";
         [filesController setPackage:package];
         [[self navigationController] pushViewController:filesController animated:true];
     }

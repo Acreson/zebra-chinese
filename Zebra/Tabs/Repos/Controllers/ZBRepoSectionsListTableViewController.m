@@ -45,11 +45,11 @@
         self.navigationItem.largeTitleDisplayMode = UINavigationItemLargeTitleDisplayModeNever;
     }
     // Purchased Buttons
-    self.login = [[UIBarButtonItem alloc] initWithTitle:@"Login" style:UIBarButtonItemStylePlain actionHandler:^{
+    self.login = [[UIBarButtonItem alloc] initWithTitle:@"登陆" style:UIBarButtonItemStylePlain actionHandler:^{
         [self setupRepoLogin];
     }];
     
-    self.purchased = [[UIBarButtonItem alloc] initWithTitle:@"Purchased" style:UIBarButtonItemStylePlain actionHandler:^{
+    self.purchased = [[UIBarButtonItem alloc] initWithTitle:@"已付" style:UIBarButtonItemStylePlain actionHandler:^{
         UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
         ZBRepoPurchasedPackagesTableViewController *ivc = (ZBRepoPurchasedPackagesTableViewController *)[storyboard instantiateViewControllerWithIdentifier:@"purchasedController"];
         ivc.repoName = self.repo.origin;
@@ -278,7 +278,7 @@
     numberFormatter.usesGroupingSeparator = YES;
     
     if (indexPath.row == 0) {
-        cell.textLabel.text = @"All Packages";
+        cell.textLabel.text = @"所有软件包";
         
         NSNumber *numberOfPackages = [NSNumber numberWithInt:[databaseManager numberOfPackagesInRepo:repo section:NULL]];
         cell.detailTextLabel.text = [numberFormatter stringFromNumber:numberOfPackages];
@@ -315,7 +315,7 @@
             destination.title = section;
         }
         else {
-            destination.title = @"All Packages";
+            destination.title = @"所有软件包";
         }
     }
 }
@@ -323,7 +323,7 @@
 //3D Touch Actions
 
 - (NSArray *)previewActionItems {
-    UIPreviewAction *refresh = [UIPreviewAction actionWithTitle:@"Refresh" style:UIPreviewActionStyleDefault handler:^(UIPreviewAction * _Nonnull action, UIViewController * _Nonnull previewViewController) {
+    UIPreviewAction *refresh = [UIPreviewAction actionWithTitle:@"刷新" style:UIPreviewActionStyleDefault handler:^(UIPreviewAction * _Nonnull action, UIViewController * _Nonnull previewViewController) {
 //        ZBDatabaseManager *databaseManager = [[ZBDatabaseManager alloc] init];
 //        [databaseManager updateDatabaseUsingCaching:true singleRepo:self->repo completion:^(BOOL success, NSError * _Nonnull error) {
 //            NSLog(@"Updated repo %@", self->repo);
@@ -331,7 +331,7 @@
     }];
     
     if ([repo canDelete]) {
-        UIPreviewAction *delete = [UIPreviewAction actionWithTitle:@"Delete" style:UIPreviewActionStyleDestructive handler:^(UIPreviewAction * _Nonnull action, UIViewController * _Nonnull previewViewController) {
+        UIPreviewAction *delete = [UIPreviewAction actionWithTitle:@"删除" style:UIPreviewActionStyleDestructive handler:^(UIPreviewAction * _Nonnull action, UIViewController * _Nonnull previewViewController) {
             [[NSNotificationCenter defaultCenter] postNotificationName:@"deleteRepoTouchAction" object:self userInfo:@{@"repo": self->repo}];
         }];
         

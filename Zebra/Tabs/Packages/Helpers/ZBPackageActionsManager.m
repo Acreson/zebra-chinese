@@ -171,7 +171,7 @@
     
     for (ZBQueueType q = ZBQueueTypeInstall; q <= ZBQueueTypeClear; q <<= 1) {
         if ([self canHaveAction:possibleActions forPackage:package queue:q]) {
-            NSString *title = [queue queueToKeyDisplayed:q];
+            NSString *title = type == 0 ? [queue queueToKeyDisplayed:q] : [queue queueToKey:q];
             void (^handler)(void) = [self getHandler:type package:package indexPath:indexPath queue:q to:queue viewController:vc parent:parent completion:completion];
             id action = [self getAction:type title:title queue:q handler:handler];
             [actions addObject:action];
@@ -194,14 +194,14 @@
     NSMutableArray *actions = [self actions:2 forPackage:package indexPath:nil viewController:vc parent:parent completion:NULL];
     
     if ([package ignoreUpdates]) {
-        UIAlertAction *unignore = [UIAlertAction actionWithTitle:@"显示更新" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        UIAlertAction *unignore = [UIAlertAction actionWithTitle:@"取消忽略" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
             [package setIgnoreUpdates:false];
         }];
         
         [actions addObject:unignore];
     }
     else {
-        UIAlertAction *ignore = [UIAlertAction actionWithTitle:@"屏蔽更新" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        UIAlertAction *ignore = [UIAlertAction actionWithTitle:@"忽略更新" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
             [package setIgnoreUpdates:true];
         }];
         

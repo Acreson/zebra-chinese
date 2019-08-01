@@ -84,7 +84,7 @@
         [webView loadRequest:request];
     }
     else {
-        self.title = @"Home";
+        self.title = @"首页";
         NSURL *url = [[NSBundle mainBundle] URLForResource:@"home" withExtension:@".html"];
         [webView loadFileURL:url allowingReadAccessToURL:[url URLByDeletingLastPathComponent]];
     }
@@ -270,19 +270,19 @@
     else if ([destination isEqual:@"repo-local"]) {
         if ([contents count] == 2) {
             if (![ZBDevice needsSimulation]) {
-                UIAlertController *controller = [UIAlertController alertControllerWithTitle:@"Add Repositories" message:@"Are you sure you want to transfer repositories?" preferredStyle:UIAlertControllerStyleAlert];
+                UIAlertController *controller = [UIAlertController alertControllerWithTitle:@"添加源" message:@"您确定要传输源吗?" preferredStyle:UIAlertControllerStyleAlert];
                 
-                UIAlertAction *yes = [UIAlertAction actionWithTitle:@"Yes" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                UIAlertAction *yes = [UIAlertAction actionWithTitle:@"是的" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
                     [self handleRepoAdd:contents[1] local:true];
                 }];
-                UIAlertAction *no = [UIAlertAction actionWithTitle:@"No" style:UIAlertActionStyleDefault handler:NULL];
+                UIAlertAction *no = [UIAlertAction actionWithTitle:@"不用" style:UIAlertActionStyleDefault handler:NULL];
                 [controller addAction:no];
                 [controller addAction:yes];
                 
                 [self presentViewController:controller animated:true completion:nil];
             }
             else {
-                UIAlertController *controller = [UIAlertController alertControllerWithTitle:@"错误" message:@"This action is not supported on non-jailbroken devices" preferredStyle:UIAlertControllerStyleAlert];
+                UIAlertController *controller = [UIAlertController alertControllerWithTitle:@"错误" message:@"非越狱设备不支持此操作" preferredStyle:UIAlertControllerStyleAlert];
                 
                 UIAlertAction *ok = [UIAlertAction actionWithTitle:@"😢" style:UIAlertActionStyleDefault handler:NULL];
                 
@@ -292,12 +292,12 @@
             }
         }
         else {
-            UIAlertController *controller = [UIAlertController alertControllerWithTitle:@"Add Repository" message:[NSString stringWithFormat:@"Are you sure you want to add the repository \"%@\"?", action] preferredStyle:UIAlertControllerStyleAlert];
+            UIAlertController *controller = [UIAlertController alertControllerWithTitle:@"添加源" message:[NSString stringWithFormat:@"您确定要添加源吗 \"%@\"?", action] preferredStyle:UIAlertControllerStyleAlert];
             
-            UIAlertAction *yes = [UIAlertAction actionWithTitle:@"Yes" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+            UIAlertAction *yes = [UIAlertAction actionWithTitle:@"是" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
                 [self handleRepoAdd:url local:true];
             }];
-            UIAlertAction *no = [UIAlertAction actionWithTitle:@"No" style:UIAlertActionStyleDefault handler:NULL];
+            UIAlertAction *no = [UIAlertAction actionWithTitle:@"不" style:UIAlertActionStyleDefault handler:NULL];
             
             [controller addAction:no];
             [controller addAction:yes];
@@ -370,15 +370,13 @@
 }
 
 - (void)showRefreshView:(NSNumber *)dropTables {
-    if (![NSThread isMainThread]) {
-        [self performSelectorOnMainThread:@selector(showRefreshView:) withObject:dropTables waitUntilDone:false];
-    }
-    else {
+    dispatch_async(dispatch_get_main_queue(), ^{
         UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
         ZBRefreshViewController *console = [storyboard instantiateViewControllerWithIdentifier:@"refreshController"];
+        console.messages = nil;
         console.dropTables = [dropTables boolValue];
         [self presentViewController:console animated:true completion:nil];
-    }
+    });
 }
 
 - (void)sendBugReport {

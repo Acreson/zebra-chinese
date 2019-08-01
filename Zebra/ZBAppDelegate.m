@@ -119,7 +119,7 @@ static const NSInteger kZebraMaxTime = 60 * 60 * 24; // 1 day
     ZBTabBarController *tabController = (ZBTabBarController *)((ZBAppDelegate *)[[UIApplication sharedApplication] delegate]).window.rootViewController;
     if (tabController != NULL) {
         dispatch_async(dispatch_get_main_queue(), ^{
-            UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:@"An Error Occured" message:error preferredStyle:UIAlertControllerStyleAlert];
+            UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:@"发生了一个错误" message:error preferredStyle:UIAlertControllerStyleAlert];
             
             if (action != nil && block != NULL) {
                 UIAlertAction *blockAction = [UIAlertAction actionWithTitle:action style:UIAlertActionStyleDefault handler:^(UIAlertAction *action_) {
@@ -127,7 +127,7 @@ static const NSInteger kZebraMaxTime = 60 * 60 * 24; // 1 day
                 }];
                 [errorAlert addAction:blockAction];
             }
-            UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"Dismiss" style:UIAlertActionStyleCancel handler:nil];
+            UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"关闭" style:UIAlertActionStyleCancel handler:nil];
             [errorAlert addAction:okAction];
             [tabController presentViewController:errorAlert animated:true completion:nil];
         });
@@ -321,13 +321,13 @@ static const NSInteger kZebraMaxTime = 60 * 60 * 24; // 1 day
 
 - (void)application:(UIApplication *)application performActionForShortcutItem:(UIApplicationShortcutItem *)shortcutItem completionHandler:(void (^)(BOOL))completionHandler {
     ZBTabBarController *tabController = (ZBTabBarController *)self.window.rootViewController;
-    if ([shortcutItem.type isEqualToString:@"Search"]) {
+    if ([shortcutItem.type isEqualToString:@"搜索"]) {
         [tabController setSelectedIndex:ZBTabSearch];
         
         ZBSearchViewController *searchController = (ZBSearchViewController *)((UINavigationController *)[tabController selectedViewController]).viewControllers[0];
         [searchController handleURL:NULL];
     }
-    else if ([shortcutItem.type isEqualToString:@"Add"]) {
+    else if ([shortcutItem.type isEqualToString:@"添加"]) {
         [tabController setSelectedIndex:ZBTabSources];
         
         ZBRepoListTableViewController *repoController = (ZBRepoListTableViewController *)((UINavigationController *)[tabController selectedViewController]).viewControllers[0];

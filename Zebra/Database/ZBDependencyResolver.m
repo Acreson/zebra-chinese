@@ -104,29 +104,24 @@
 }
 
 - (ZBPackage *)packageThatSatisfiesVersionComparison:(NSString *)line checkProvides:(BOOL)provides {
-    NSArray *components = [line componentsSeparatedByString:@" ("];
-    if ([components count] == 1) { //Bad package maker alert
-        components = [line componentsSeparatedByString:@"("];
-    }
+    NSUInteger openIndex = [line rangeOfString:@"("].location;
+    NSUInteger closeIndex = [line rangeOfString:@")"].location;
     
-    NSString *depPackageID = components[0];
-    NSArray *separate = [components[1] componentsSeparatedByString:@" "];
+    NSString *depPackageID = [[line substringToIndex:openIndex] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    NSString *versionPredicate = [[line substringWithRange:NSMakeRange(openIndex + 1, closeIndex - openIndex)] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    NSArray *separate = [versionPredicate componentsSeparatedByString:@" "];
     
     if ([separate count] > 1) {
         NSString *comparison = separate[0];
         NSString *version = [separate[1] substringToIndex:[separate[1] length] - 1];
-        
 //        NSLog(@"[Zebra] Trying to resolve version, %@ needs to be %@ than %@", depPackageID, comparison, version);
         return [databaseManager packageForID:depPackageID thatSatisfiesComparison:comparison ofVersion:version checkInstalled:true checkProvides:provides];
     }
     else { //bad repo maintainer alert
-        NSString *versionComparison = [components[1] substringToIndex:[components[1] length] - 1];
         NSString *comparison;
         NSString *version;
-        
-        NSScanner *scanner = [NSScanner scannerWithString:versionComparison];
+        NSScanner *scanner = [NSScanner scannerWithString:versionPredicate];
         NSCharacterSet *versionChars = [NSCharacterSet characterSetWithCharactersInString:@":.+-~abcdefghijklmnopqrstuvwxyz0123456789"];
-        
         [scanner scanUpToCharactersFromSet:versionChars intoString:&comparison];
         [scanner scanCharactersFromSet:versionChars intoString:&version];
         
@@ -166,14 +161,14 @@
                 ZBPackage *conf = [[ZBPackage alloc] initWithSQLiteStatement:statement];
                 for (NSString *dep in [conf conflictsWith]) {
                     if ([dep isEqualToString:package.identifier]) {
-                        if ([[conf conflictsWith] containsObject:package.identifier]) {
-                            // If this conflicting package (conf) conflicts with this not-installed package, we remove conf
-                            [queue addPackage:conf toQueue:ZBQueueTypeRemove];
-                            continue;
-                        }
-                        else if ([[conf provides] containsObject:package.identifier] || [[conf replaces] containsObject:package.identifier]) {
+                        if ([[conf provides] containsObject:package.identifier] || [[conf replaces] containsObject:package.identifier]) {
                             // If this conflicting package (conf) can replace this not-installed package, we don't have to install this package (package)
                             [queue removePackage:package fromQueue:ZBQueueTypeInstall];
+                            continue;
+                        }
+                        else if ([[conf conflictsWith] containsObject:package.identifier]) {
+                            // If this conflicting package (conf) conflicts with this not-installed package, we remove conf
+                            [queue addPackage:conf toQueue:ZBQueueTypeRemove];
                             continue;
                         }
                         [queue markPackageAsFailed:package forConflicts:conf conflictionType:1];
@@ -214,9 +209,8 @@
                     ZBPackage *depPackage = [self packageThatResolvesDependency:line checkProvides:false];
                     if (depPackage) {
                         ZBPackage *providingPackage = [databaseManager packageThatProvides:depPackage.identifier checkInstalled:true];
-                        if (providingPackage && ![providingPackage sameAs:depPackage]) {
-                            shouldRemove = NO;
-                            break;
+                        if (providingPackage && shouldRemove) {
+                            shouldRemove = ![providingPackage sameAs:depPackage];
                         }
                     }
                 }

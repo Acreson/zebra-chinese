@@ -53,7 +53,7 @@ typedef enum {
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    selectedSortingType = ZBSortingTypeABC;
+    selectedSortingType = [[NSUserDefaults standardUserDefaults] boolForKey:@"sortPackagesByRecent"] ? ZBSortingTypeDate : ZBSortingTypeABC;
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(darkMode:) name:@"darkMode" object:nil];
     self.tableView.sectionIndexBackgroundColor = [UIColor clearColor];
     self.tableView.contentInset = UIEdgeInsetsMake(5, 0, 0, 0);
@@ -63,6 +63,10 @@ typedef enum {
         [self registerForPreviewingWithDelegate:self sourceView:self.view];
     }
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(refreshTable) name:@"ZBDatabaseCompletedUpdate" object:nil];
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
     [self refreshTable];
 }
 
@@ -211,7 +215,7 @@ typedef enum {
 }
 
 - (void)askClearQueue {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"斑马" message:@"你确定要清除队列?" preferredStyle:UIAlertControllerStyleActionSheet];
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"斑马" message:@"您确定要清除队列吗?" preferredStyle:UIAlertControllerStyleActionSheet];
     
     UIAlertAction *clearAction = [UIAlertAction actionWithTitle:@"清除" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
         [self clearQueue];
@@ -301,6 +305,8 @@ typedef enum {
 
 - (void)segmentedControlValueChanged:(UISegmentedControl *)segmentedControl {
     selectedSortingType = (ZBSortingType)segmentedControl.selectedSegmentIndex;
+    [[NSUserDefaults standardUserDefaults] setBool:selectedSortingType == ZBSortingTypeDate forKey:@"sortPackagesByRecent"];
+    [[NSUserDefaults standardUserDefaults] synchronize];
     [self refreshTable];
 }
 
@@ -375,16 +381,16 @@ typedef enum {
     BOOL hasDataInSection = !isUpdateSection && !isIgnoredUpdateSection && [[self objectAtSection:section] count];
     if (isUpdateSection || isIgnoredUpdateSection || hasDataInSection) {
         if (isUpdateSection) {
-            return [NSString stringWithFormat:@"Available Upgrades (%lu)", (unsigned long)updates.count];
+            return [NSString stringWithFormat:@"可以更新 (%lu) 个", (unsigned long)updates.count];
         }
         if (isIgnoredUpdateSection) {
-            return [NSString stringWithFormat:@"Ignored Upgrades (%lu)", (unsigned long)ignoredUpdates.count];
+            return [NSString stringWithFormat:@"忽略更新 (%lu) 个", (unsigned long)ignoredUpdates.count];
         }
         if (selectedSortingType == ZBSortingTypeABC && hasDataInSection) {
             return [self sectionIndexTitlesForTableView:tableView][[self trueSection:section]];
         }
         if (selectedSortingType == ZBSortingTypeDate) {
-            return @"Recent";
+            return @"最近";
         }
     }
     return nil;
@@ -394,11 +400,11 @@ typedef enum {
     return [self tableView:tableView numberOfRowsInSection:section] ? 30 : 0;
 }
 
-- (CGFloat) tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
+- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
     return UITableViewAutomaticDimension;
 }
 
-- (CGFloat) tableView:(UITableView *)tableView estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
+- (CGFloat)tableView:(UITableView *)tableView estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
     return 65;
 }
 
