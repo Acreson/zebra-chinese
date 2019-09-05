@@ -30,7 +30,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)markPackageAsFailed:(ZBPackage *)package forDependency:(NSString *)failedDependency;
 - (void)markPackageAsFailed:(ZBPackage *)package forConflicts:(ZBPackage *)conflict conflictionType:(int)type;
 - (void)removePackage:(ZBPackage *)package fromQueue:(ZBQueueType)queue;
-- (NSOrderedSet *)tasks:(NSArray *)debs;
+- (NSArray *)tasks:(NSArray *)debs;
 - (int)numberOfPackagesForQueue:(NSString *)queue;
 - (nullable NSMutableArray <ZBPackage *> *)packagesRequiredBy:(ZBPackage *)package;
 - (nullable ZBPackage *)packageReplacedBy:(ZBPackage *)package;
@@ -47,7 +47,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSString *)queueToKey:(ZBQueueType)queue;
 - (NSString *)queueToKeyDisplayed:(ZBQueueType)queue;
 - (ZBQueueType)keyToQueue:(NSString *)key;
-- (ZBQueueType)queueStatusForPackageIdentifier:(NSString *)identifier;
+- (ZBQueueType)queueStatusForPackage:(ZBPackage *)package;
 - (BOOL)hasErrors;
 @end
 

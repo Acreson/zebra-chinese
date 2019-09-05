@@ -80,6 +80,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)bulkDatabaseCompletedUpdate:(int)updates;
 - (void)bulkPostStatusUpdate:(NSString *)status atLevel:(ZBLogLevel)level;
 - (void)bulkSetRepo:(NSString *)bfn busy:(BOOL)busy;
+- (void)cancelUpdates:(id <ZBDatabaseDelegate>)delegate;
 
 /*!
  @brief Prints sqlite_errmsg to the log.
@@ -102,6 +103,13 @@ NS_ASSUME_NONNULL_BEGIN
  @param useCaching Same as above.
  */
 - (void)updateRepo:(ZBRepo *)repo useCaching:(BOOL)useCaching;
+
+/*!
+ @brief Update a repository.
+ @param repoURLs The targer repositories in URL format.
+ @param useCaching Same as above.
+ */
+- (void)updateRepoURLs:(NSArray <NSURL *> *)repoURLs useCaching:(BOOL)useCaching;
 
 /*!
  @brief Parses files located in the filenames dictionary.
@@ -411,6 +419,14 @@ NS_ASSUME_NONNULL_BEGIN
  @return An array of every package made by specified author.
  */
 - (NSArray *)packagesByAuthor:(NSString *)author;
+
+
+/*!
+ @brief Returns all packages with a reachable icon.
+ @param limit Specify how many rows are selected.
+ @return An array of all packages with a reachable icon.
+ */
+- (NSArray *)packagesWithReachableIconsForRows:(int)limit;
 @end
 
 NS_ASSUME_NONNULL_END

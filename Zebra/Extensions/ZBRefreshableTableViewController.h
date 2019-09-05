@@ -2,7 +2,7 @@
 //  ZBRefreshableTableViewController.h
 //  Zebra
 //
-//  Created by Thatchapon Unprasert on 17/6/2562 BE.
+//  Created by Thatchapon Unprasert on 17/6/2019
 //  Copyright © 2019 Wilson Styres. All rights reserved.
 //
 
@@ -15,6 +15,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface ZBRefreshableTableViewController : UITableViewController <ZBDatabaseDelegate>
 @property (nonatomic, strong) ZBDatabaseManager *databaseManager;
 - (void)setRepoRefreshIndicatorVisible:(BOOL)visible;
+- (void)didEndRefreshing;
 @end
 
 NS_ASSUME_NONNULL_END

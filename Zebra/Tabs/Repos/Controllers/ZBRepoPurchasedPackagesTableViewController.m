@@ -37,7 +37,7 @@
         self.navigationItem.titleView = container;
     }
     self.title = self.repoName;
-    self.logOut = [[UIBarButtonItem alloc] initWithTitle:@"Log Out" style:UIBarButtonItemStylePlain actionHandler:^{
+    self.logOut = [[UIBarButtonItem alloc] initWithTitle:@"退出" style:UIBarButtonItemStylePlain actionHandler:^{
         [self logoutRepo];
     }];
     [self.navigationItem setRightBarButtonItem:self.logOut];
@@ -67,10 +67,10 @@
     [request setHTTPBody: requestData];
     [[session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:kNilOptions error:nil];
-        //self.packages = json[@"items"];
-        //[self.packages removeAllObjects];
-        //self.packages = nil
-        //Make package ids lowercase so we dont miss any
+        // self.packages = json[@"items"];
+        // [self.packages removeAllObjects];
+        // self.packages = nil
+        // Make package ids lowercase so we dont miss any
         NSMutableArray *loweredPackages = [NSMutableArray new];
         for (NSString *name in json[@"items"]) {
             [loweredPackages addObject:[name lowercaseString]];
@@ -141,11 +141,11 @@
 }
 
 - (void)tableView:(UITableView *)tableView willDisplayCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath {
-    if (indexPath.section == 0) { //Account Cell
+    if (indexPath.section == 0) { // Account Cell
         cell.textLabel.text = self.userName;
         cell.detailTextLabel.text = self.userEmail;
     }
-    else { //Package Cell
+    else { // Package Cell
         ZBPackage *package = (ZBPackage *)[_packages objectAtIndex:indexPath.row];
         [(ZBPackageTableViewCell *)cell updateData:package];
     }
@@ -154,14 +154,11 @@
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     if (indexPath.section == 0) {
         UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"accountCell"];
-        
         return cell;
     }
     else {
         ZBPackageTableViewCell *cell = (ZBPackageTableViewCell *)[tableView dequeueReusableCellWithIdentifier:@"packageTableViewCell" forIndexPath:indexPath];
-        cell.packageLabel.textColor = [UIColor cellPrimaryTextColor];
-        cell.descriptionLabel.textColor = [UIColor cellSecondaryTextColor];
-        cell.backgroundContainerView.backgroundColor = [UIColor cellBackgroundColor];
+        [cell setColors];
         return cell;
     }
     
@@ -209,8 +206,6 @@
         ZBPackageDepictionViewController *destination = (ZBPackageDepictionViewController *)[segue destinationViewController];
         NSIndexPath *indexPath = sender;
         destination.package = [_packages objectAtIndex:indexPath.row];
-        
-        [_databaseManager closeDatabase];
         destination.view.backgroundColor = [UIColor tableViewBackgroundColor];
     }
 }

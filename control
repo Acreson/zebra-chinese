@@ -1,11 +1,11 @@
 Package: xyz.willy.zebra
-Name: Zebra（beta） 汉化
+Name: Zebra（beta）汉化优化
 Architecture: iphoneos-arm
 Depends: dpkg, uikittools
-Description: 一个包管理器支持IOS8-12
+Description: 一个包管理器支持IOS8-13
 SileoDepiction:https://crazyc.top/ms/msxq/zebra.json
 Maintainer: Wilson Styres & Acreson
 Author: Wilson Styres & Acreson
 Section: Acreson-安装包(Packages)
 Icon: file:///Applications/Zebra.app/darkZebraSkin@2x.png
-Version: 1.0~beta19
+Version: 1.0~beta21

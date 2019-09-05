@@ -35,7 +35,7 @@
     [self colorWindow];
     WKWebViewConfiguration *configuration = [[WKWebViewConfiguration alloc] init];
     configuration.applicationNameForUserAgent = [NSString stringWithFormat:@"Zebra - %@", PACKAGE_VERSION];
-
+    
     WKUserContentController *controller = [[WKUserContentController alloc] init];
     [controller addScriptMessageHandler:self name:@"observe"];
     configuration.userContentController = controller;
@@ -51,7 +51,7 @@
     [webView addSubview:progressView];
     
     //Web View Layout
-
+    
     [webView.topAnchor constraintEqualToAnchor:self.topLayoutGuide.bottomAnchor].active = YES;
     [webView.bottomAnchor constraintEqualToAnchor:self.bottomLayoutGuide.topAnchor].active = YES;
     [webView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor].active = YES;

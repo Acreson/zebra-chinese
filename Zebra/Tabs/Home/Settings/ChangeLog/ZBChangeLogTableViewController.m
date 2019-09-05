@@ -29,7 +29,7 @@
 - (void)fetchGithubReleases {
     NSMutableURLRequest *request = [[NSMutableURLRequest alloc] init];
     [request setHTTPMethod:@"GET"];
-    [request setURL:[NSURL URLWithString:@"https://api.github.com/repos/wstyres/Zebra/releases"]];
+    [request setURL:[NSURL URLWithString:@"api.github.com/repos/wstyres/Zebra/releases"]];
     
     [[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:
       ^(NSData * _Nullable data,
@@ -108,3 +108,4 @@
 }
 
 @end
+

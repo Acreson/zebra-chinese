@@ -7,6 +7,7 @@
 //
 
 #import "ZBConsoleViewController.h"
+#import <ZBLog.h>
 #import <NSTask.h>
 #import <ZBDevice.h>
 #import <Queue/ZBQueue.h>
@@ -15,6 +16,14 @@
 #import <ZBTabBarController.h>
 #import <Downloads/ZBDownloadManager.h>
 #import <Packages/Helpers/ZBPackage.h>
+
+typedef enum {
+    ZBStageInstall = 0,
+    ZBStageRemove,
+    ZBStageReinstall,
+    ZBStageUpgrade,
+    ZBStageDone
+} ZBStage;
 
 @interface ZBConsoleViewController () {
     int stage;
@@ -54,13 +63,14 @@
     _progressText.hidden = YES;
     UIBarButtonItem *cancelButton = [[UIBarButtonItem alloc] initWithTitle:@"取消" style:UIBarButtonItemStylePlain target:self action:@selector(cancel)];
     self.navigationItem.leftBarButtonItem = cancelButton;
+    [self.navigationItem setHidesBackButton:YES animated:NO];
 }
 
 - (void)viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
     
     if (_externalInstall) {
-        akton = @[@[@0], @[@"dpkg", @"-i", _externalFilePath]];
+        akton = @[@[@0], @[@"apt", @"install", @"-y", _externalFilePath]];
         [self performSelectorInBackground:@selector(performActions) withObject:NULL];
     }
     else if ([queue needsHyena]) {
@@ -91,34 +101,38 @@
     [self performActions:NULL];
 }
 
+- (BOOL)isValidPackageID:(NSString *)packageID {
+    return ![packageID hasPrefix:@"-"] && ![packageID isEqualToString:@"install"] && ![packageID isEqualToString:@"remove"];
+}
+
 - (void)performActions:(NSArray *)debs {
     if (akton != NULL) {
+        ZBLog(@"[Zebra] Actions: %@", akton);
         for (NSArray *command in akton) {
             if ([command count] == 1) {
                 [self updateStatus:[command[0] intValue]];
             }
             else {
-                for (int i = 2; i < [command count]; i++) {
+                for (int i = 3; i < [command count]; ++i) {
                     NSString *packageID = command[i];
+                    if (![self isValidPackageID:packageID]) {
+                        continue;
+                    }
                     
-                    if (stage == 1) {
-                        BOOL update = [ZBPackage containsApp:packageID];
-                        if (update) {
+                    if (stage != ZBStageDone) {
+                        if (!needsIconCacheUpdate && [ZBPackage containsApp:packageID]) {
                             needsIconCacheUpdate = true;
                             NSString *path = [ZBPackage pathForApplication:packageID];
                             if (path) {
                                 [bundlePaths addObject:path];
-                                if (!self->hasZebraUpdated && [packageID isEqualToString:[ZBAppDelegate bundleID]]) {
-                                    self->hasZebraUpdated = YES;
-                                }
                             }
                         }
                         
                         if (!needsRespring) {
-                            needsRespring = [ZBPackage containsTweak:packageID];
+                            needsRespring = [ZBPackage containsRespringable:packageID];
                         }
                     }
-                    else {
+                    if (stage != ZBStageDone && stage != ZBStageRemove) {
                         [installedIDs addObject:packageID];
                     }
                 }
@@ -152,33 +166,33 @@
         if (continueWithActions) {
             _progressText.text = @"执行操作中...";
             self.navigationItem.leftBarButtonItem = nil;
-            NSOrderedSet *actions = [queue tasks:debs];
+            NSArray *actions = [queue tasks:debs];
+            ZBLog(@"[Zebra] Actions: %@", actions);
             
             for (NSArray *command in actions) {
                 if ([command count] == 1) {
                     [self updateStatus:[command[0] intValue]];
                 }
                 else {
-                    for (int i = 2; i < [command count]; i++) {
+                    for (int i = 3; i < [command count]; ++i) {
                         NSString *packageID = command[i];
-                        if (stage == 1) {
-                            BOOL update = [ZBPackage containsApp:packageID];
-                            if (update) {
+                        if (![self isValidPackageID:packageID]) {
+                            continue;
+                        }
+                        if (stage != ZBStageDone) {
+                            if (!needsIconCacheUpdate && [ZBPackage containsApp:packageID]) {
                                 needsIconCacheUpdate = true;
                                 NSString *path = [ZBPackage pathForApplication:packageID];
                                 if (path) {
                                     [bundlePaths addObject:path];
-                                    if (!self->hasZebraUpdated && [packageID isEqualToString:[ZBAppDelegate bundleID]]) {
-                                        self->hasZebraUpdated = YES;
-                                    }
                                 }
                             }
                             
                             if (!needsRespring) {
-                                needsRespring = [ZBPackage containsTweak:packageID];
+                                needsRespring = [ZBPackage containsRespringable:packageID];
                             }
                         }
-                        else {
+                        if (stage != ZBStageDone && stage != ZBStageRemove) {
                             [installedIDs addObject:packageID];
                         }
                     }
@@ -232,6 +246,9 @@
                 NSRange underscoreRange = [truePackageID rangeOfString:@"_" options:NSLiteralSearch];
                 if (underscoreRange.location != NSNotFound) {
                     truePackageID = [truePackageID substringToIndex:underscoreRange.location];
+                    if (!self->hasZebraUpdated && [truePackageID isEqualToString:@"xyz.willy.zebra"]) {
+                        self->hasZebraUpdated = YES;
+                    }
                 }
                 if ([uicaches containsObject:truePackageID])
                     continue;
@@ -241,7 +258,7 @@
         }
         
         if (!needsRespring) {
-            needsRespring = [ZBPackage containsTweak:packageID] ? true : needsRespring;
+            needsRespring = [ZBPackage containsRespringable:packageID] ? true : needsRespring;
         }
     }
     
@@ -250,7 +267,7 @@
         NSMutableArray *arguments = [NSMutableArray new];
         if ([uicaches count] + [bundlePaths count] > 1) {
             [arguments addObject:@"-a"];
-            [self writeToConsole:@"这可能需要一段时间，斑马可能会崩溃。\n即便是这样也没关系.\n斑马没那么脆弱.就是那么屌。\n" atLevel:ZBLogLevelWarning];
+            [self writeToConsole:@"这可能需要一段时间，斑马可能会崩溃。\n即便是这样也没关系.\n斑马没那么脆弱.就是那么屌。👍\n" atLevel:ZBLogLevelWarning];
         }
         else {
             [arguments addObject:@"-p"];
@@ -272,7 +289,7 @@
     }
     
     [self removeAllDebs];
-    [self updateStatus:4];
+    [self updateStatus:ZBStageDone];
     [self updateCompleteButton];
 }
 
@@ -299,6 +316,9 @@
 }
 
 - (void)addCloseButton {
+    if (self->hasZebraUpdated) {
+        return;
+    }
     UIBarButtonItem *closeButton = [[UIBarButtonItem alloc] initWithTitle:@"关闭" style:UIBarButtonItemStylePlain target:self action:@selector(goodbye)];
     self.navigationController.navigationBar.tintColor = [UIColor whiteColor];
     self.navigationItem.rightBarButtonItem = closeButton;
@@ -331,14 +351,13 @@
 }
 
 - (void)restartSpringBoard {
-    //Bye!
     [ZBDevice sbreload];
 }
 
 - (void)refreshLocalPackages {
     ZBDatabaseManager *databaseManager = [ZBDatabaseManager sharedInstance];
     [databaseManager addDatabaseDelegate:self];
-    [databaseManager importLocalPackagesAndCheckForUpdates:true sender:self];
+    [databaseManager importLocalPackagesAndCheckForUpdates:YES sender:self];
 }
 
 - (void)removeAllDebs {
@@ -393,11 +412,12 @@
         [self writeToConsole:str atLevel:ZBLogLevelDescript];
     }
 }
+
 ///检测dpkg错误的
 - (void)receivedErrorData:(NSNotification *)notif {
     NSFileHandle *fh = [notif object];
     NSData *data = [fh availableData];
-
+    
     if (data.length) {
         [fh waitForDataInBackgroundAndNotify];
         NSString *str = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
@@ -479,7 +499,7 @@
     else {
         continueWithActions = false;
         [self cancel];
-        [self writeToConsole:@"没有下载任何东西.\n因为" atLevel:ZBLogLevelWarning];
+        [self writeToConsole:@"没有下载任何东西.\n\n\n如果上面红字提示你与互联网断开链接.\n说明你的zebra没有网络权限.\n根据系统修复网络权限.\n本源网络分区有修复工具\n\n\n如果是你Electra/Chimera越狱工具越狱的.\n那就说明这个源不适配Sileo请放弃在Sileo/Zebra中下载.\n请安装本源的Electra/Chimera专用的Cydia下载即可.\n" atLevel:ZBLogLevelWarning];
         [self updateStatus:4];
         [self updateCompleteButton];
     }
@@ -512,7 +532,7 @@
 - (void)databaseCompletedUpdate:(int)packageUpdates {
     [self writeToConsole:@"导入完成.\n" atLevel:ZBLogLevelInfo];
     
-    NSLog(@"[Zebra] %d updates available.", packageUpdates);
+    NSLog(@"[Zebra] %d 更新可用。", packageUpdates);
     
     if (packageUpdates != -1) {
         ZBTabBarController *tabController = (ZBTabBarController *)[[[UIApplication sharedApplication] delegate] window].rootViewController;
@@ -523,3 +543,4 @@
 }
 
 @end
+

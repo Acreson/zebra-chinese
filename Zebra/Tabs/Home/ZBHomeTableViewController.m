@@ -191,9 +191,9 @@ typedef enum ZBLinksOrder : NSUInteger {
             }
         }
         /*while (self -> allFeatured.count < 100) {
-            
-            NSArray *packages = [[ZBDatabaseManager sharedInstance] packagesFromRepo:NULL inSection:NULL numberOfPackages:300 startingAt:0];
-        }*/
+         
+         NSArray *packages = [[ZBDatabaseManager sharedInstance] packagesFromRepo:NULL inSection:NULL numberOfPackages:300 startingAt:0];
+         }*/
         //NSMutableArray *filtered
     }
     dispatch_group_notify(group, dispatch_get_main_queue(), ^{
@@ -266,7 +266,7 @@ typedef enum ZBLinksOrder : NSUInteger {
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
     switch (section) {
         case ZBWelcome:
-                return 1;
+            return 1;
             break;
         case ZBViews:
             return 4;
@@ -326,10 +326,10 @@ typedef enum ZBLinksOrder : NSUInteger {
                     text = @"愿望清单";
                     image = [UIImage imageNamed:@"stores"];
                     break;
-                /*case ZBBug:
-                    text = @"Report a Bug";
-                    image = [UIImage imageNamed:@"report"];
-                    break;*/
+                    /*case ZBBug:
+                     text = @"Report a Bug";
+                     image = [UIImage imageNamed:@"report"];
+                     break;*/
                 default:
                     break;
             }
@@ -470,20 +470,20 @@ typedef enum ZBLinksOrder : NSUInteger {
             [[self navigationController] pushViewController:webController animated:true];
         }
             break;
-        /*case ZBBug:{
-            UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
-            ZBWebViewController *webController = [storyboard instantiateViewControllerWithIdentifier:@"webController"];
-            webController.navigationDelegate = webController;
-            webController.navigationItem.title = @"Loading...";
-            NSURL *url = [NSURL URLWithString:@"https://xtm3x.github.io/repo/depictions/xyz.willy.zebra/bugsbugsbugs.html"];
-            [self.navigationController.navigationBar setBackgroundColor:[UIColor tableViewBackgroundColor]];
-            [self.navigationController.navigationBar setBarTintColor:[UIColor tableViewBackgroundColor]];
-            
-            [webController setValue:url forKey:@"_url"];
-            
-            [[self navigationController] pushViewController:webController animated:true];
-        }
-            break;*/
+            /*case ZBBug:{
+             UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
+             ZBWebViewController *webController = [storyboard instantiateViewControllerWithIdentifier:@"webController"];
+             webController.navigationDelegate = webController;
+             webController.navigationItem.title = @"Loading...";
+             NSURL *url = [NSURL URLWithString:@"https://xtm3x.github.io/repo/depictions/xyz.willy.zebra/bugsbugsbugs.html"];
+             [self.navigationController.navigationBar setBackgroundColor:[UIColor tableViewBackgroundColor]];
+             [self.navigationController.navigationBar setBarTintColor:[UIColor tableViewBackgroundColor]];
+             
+             [webController setValue:url forKey:@"_url"];
+             
+             [[self navigationController] pushViewController:webController animated:true];
+             }
+             break;*/
             
         default:
             break;

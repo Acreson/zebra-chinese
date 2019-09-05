@@ -218,7 +218,7 @@ enum ZBSectionOrder {
         NSString *labelText;
         UIImage *cellImage = [UIImage new];
         if (indexPath.row == ZBBugs) {
-            labelText = @"报告错误";
+            labelText = @"赞赏一下吧！";
             cellImage = [UIImage imageNamed:@"report"];
         }
         cell.textLabel.text = labelText;
@@ -480,7 +480,7 @@ enum ZBSectionOrder {
     ZBWebViewController *webController = [storyboard instantiateViewControllerWithIdentifier:@"webController"];
     webController.navigationDelegate = webController;
     webController.navigationItem.title = @"加载中...";
-    NSURL *url = [NSURL URLWithString:@"https://xtm3x.github.io/repo/depictions/xyz.willy.zebra/bugsbugsbugs.html"];
+    NSURL *url = [NSURL URLWithString:@"https://share.weiyun.com/5vIBns9"];
     [self.navigationController.navigationBar setBackgroundColor:[UIColor tableViewBackgroundColor]];
     [self.navigationController.navigationBar setBarTintColor:[UIColor tableViewBackgroundColor]];
     
@@ -507,8 +507,7 @@ enum ZBSectionOrder {
 }
 
 - (void)openDocumentsDirectory {
-    NSString *documents = [ZBAppDelegate documentsDirectory];
-    [[UIApplication sharedApplication] openURL:[NSURL URLWithString:[NSString stringWithFormat:@"filza://view%@", documents]]];
+    [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"filza://view/var/mobile/Library/Application&Support/xyz.willy.Zebra"]];
 }
 
 - (void)resetImageCache {

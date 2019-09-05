@@ -36,12 +36,13 @@ NS_ASSUME_NONNULL_BEGIN
 @property BOOL sileoDownload;
 
 + (NSArray *)filesInstalled:(NSString *)packageID;
-+ (BOOL)containsTweak:(NSString *)packageID;
++ (BOOL)containsRespringable:(NSString *)packageID;
 + (BOOL)containsApp:(NSString *)packageID;
 + (NSString *)pathForApplication:(NSString *)packageID;
 - (id)initWithSQLiteStatement:(sqlite3_stmt *)statement;
 - (NSComparisonResult)compare:(id)object;
 - (BOOL)sameAs:(ZBPackage *)package;
+- (BOOL)sameAsStricted:(ZBPackage *)package;
 - (BOOL)isPaid;
 - (NSString *)getField:(NSString *)field;
 - (BOOL)isInstalled:(BOOL)strict;

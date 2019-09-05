@@ -68,7 +68,14 @@ typedef enum {
             [databaseManager dropTables];
         }
         
-        [databaseManager updateDatabaseUsingCaching:NO userRequested:YES];
+        if (self.repoURLs.count) {
+            // Update only the repos specified
+            [databaseManager updateRepoURLs:self.repoURLs useCaching:NO];
+        }
+        else {
+            // Update every repo
+            [databaseManager updateDatabaseUsingCaching:NO userRequested:YES];
+        }
     }
     else {
         hadAProblem = YES;
@@ -88,11 +95,7 @@ typedef enum {
         if (_dropTables) {
             return;
         }
-        [databaseManager setDatabaseBeingUpdated:NO];
-        [databaseManager setHaltDatabaseOperations];
-        [databaseManager.downloadManager stopAllDownloads];
-        [databaseManager removeDatabaseDelegate:self];
-        [databaseManager bulkDatabaseCompletedUpdate:-1];
+        [databaseManager cancelUpdates:self];
         ((ZBTabBarController *)self.tabBarController).repoBusyList = [NSMutableDictionary new];
         [self writeToConsole:@"已取消刷新\n" atLevel:ZBLogLevelInfo];
         

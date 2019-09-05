@@ -50,11 +50,11 @@ char *multi_tok(char *input, multi_tok_t *string, char *delimiter) {
 
 multi_tok_t init() { return NULL; }
 
-char* replace_char(char* str, char find, char replace) {
-    char *current_pos = strchr(str,find);
+char *replace_char(char *str, char find, char replace) {
+    char *current_pos = strchr(str, find);
     while (current_pos) {
         *current_pos = replace;
-        current_pos = strchr(current_pos,find);
+        current_pos = strchr(current_pos, find);
     }
     return str;
 }
@@ -71,12 +71,8 @@ int isRepoSecure(const char* sourcePath, char *repoURL) {
                 return 1;
             }
         }
-        
-        return 0;
     }
-    else {
-        return 0;
-    }
+    return 0;
 }
 
 char *reposSchema() {
@@ -125,7 +121,7 @@ int needsMigration(sqlite3 *database, int table) {
         }
         
         if (schema != NULL) {
-            //Remove CREATE TABLE
+            // Remove CREATE TABLE
             multi_tok_t s = init();
             multi_tok(schema, &s, "CREATE TABLE ");
             schema = multi_tok(NULL, &s, "CREATE TABLE ");
@@ -460,7 +456,7 @@ enum PARSEL_RETURN_TYPE importPackagesToDatabase(const char *path, sqlite3 *data
             char *key = multi_tok(info, &s, ": ");
             char *value = multi_tok(NULL, &s, ": ");
             
-            if (key == NULL || value == NULL) { //y'all suck at maintaining repos, what do you do? make the package files by hand??
+            if (key == NULL || value == NULL) { // y'all suck at maintaining repos, what do you do? make the package files by hand??
                 key = multi_tok(info, &s, ":");
                 value = multi_tok(NULL, &s, ":");
             }
@@ -478,7 +474,7 @@ enum PARSEL_RETURN_TYPE importPackagesToDatabase(const char *path, sqlite3 *data
             
             dict_add(package, key, value);
             
-            if (key != NULL && strcmp(key, "Description") == 0) { //Check for a long description
+            if (key != NULL && strcmp(key, "Description") == 0) { // Check for a long description
                 longDescFlag = true;
             }
         }
@@ -548,7 +544,7 @@ enum PARSEL_RETURN_TYPE updatePackagesInDatabase(const char *path, sqlite3 *data
             char *key = multi_tok(info, &s, ": ");
             char *value = multi_tok(NULL, &s, ": ");
             
-            if (key == NULL || value == NULL) { //y'all suck at maintaining repos, what do you do? make the package files by hand??
+            if (key == NULL || value == NULL) { // y'all suck at maintaining repos, what do you do? make the package files by hand??
                 key = multi_tok(info, &s, ":");
                 value = multi_tok(NULL, &s, ":");
             }
@@ -566,7 +562,7 @@ enum PARSEL_RETURN_TYPE updatePackagesInDatabase(const char *path, sqlite3 *data
             
             dict_add(package, key, value);
             
-            if (key != NULL && strcmp(key, "Description") == 0) { //Check for a long description
+            if (key != NULL && strcmp(key, "Description") == 0) { // Check for a long description
                 longDescFlag = true;
             }
         }

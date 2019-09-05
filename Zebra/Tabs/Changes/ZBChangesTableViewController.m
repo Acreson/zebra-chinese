@@ -2,10 +2,11 @@
 //  ZBChangesTableViewController.m
 //  Zebra
 //
-//  Created by Thatchapon Unprasert on 2/6/2562 BE.
+//  Created by Thatchapon Unprasert on 2/6/2019
 //  Copyright © 2019 Wilson Styres. All rights reserved.
 //
 
+#import <ZBLog.h>
 #import <ZBAppDelegate.h>
 #import "ZBChangesTableViewController.h"
 #import <Database/ZBDatabaseManager.h>
@@ -54,16 +55,16 @@
     availableOptions = @[@"release", @"update", @"upcoming", @"news"];
     defaults = [NSUserDefaults standardUserDefaults];
     [self startSettingHeader];
+    self.batchLoadCount = 500;
     [self refreshTable];
 }
 
 - (void)startSettingHeader  {
-    //NSLog(@"Running");
+    // NSLog(@"Running");
     self.tableView.tableHeaderView.frame = CGRectMake(self.tableView.tableHeaderView.frame.origin.x, self.tableView.tableHeaderView.frame.origin.y, self.tableView.tableHeaderView.frame.size.width, CGFLOAT_MIN);
     if ([defaults boolForKey:@"wantsNews"]) {
-        //NSLog(@"TRUE");
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-            //[self retrieveNewsJson];
+            // [self retrieveNewsJson];
             [self kickStartReddit];
         });
     }
@@ -73,7 +74,8 @@
     NSDate *creationDate = [defaults objectForKey:@"redditCheck"];
     if (!creationDate) {
         [self getRedditToken];
-    }else {
+    }
+    else {
         double seconds = [[NSDate date] timeIntervalSinceDate:creationDate];
         if (seconds > 3500) {
             [self getRedditToken];
@@ -89,7 +91,7 @@
     [request setURL:checkingURL];
     [request setHTTPMethod:@"POST"];
     [request setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
-    //NSString *authString = @"Basic YnllM25VQzk1VUhNRlE6IA==";
+    // NSString *authString = @"Basic YnllM25VQzk1VUhNRlE6IA==";
     [request setValue:[NSString stringWithFormat:@"Zebra %@ iOS:%@", PACKAGE_VERSION, [[UIDevice currentDevice] systemVersion]] forHTTPHeaderField:@"User-Agent"];
     [request setValue:@"Basic ZGZmVWtsVG9WY19ZV1E6IA==" forHTTPHeaderField:@"Authorization"];
     NSString *string = @"grant_type=https://oauth.reddit.com/grants/installed_client&device_id=DO_NOT_TRACK_THIS_DEVICE";
@@ -97,17 +99,17 @@
     NSURLSession *session = [NSURLSession sharedSession];
     [[session dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         if (data) {
-            //NSLog(@"ZEBRA FINISHED THING %@", [data class]);
+            // NSLog(@"ZEBRA FINISHED THING %@", [data class]);
             NSError *error2;
             NSDictionary *dictionary = [NSJSONSerialization JSONObjectWithData:data options:kNilOptions error:&error2];
-            //NSLog(@"ZEBRA DICT %@", dictionary);
+            // NSLog(@"ZEBRA DICT %@", dictionary);
             [self->defaults setObject:[dictionary objectForKey:@"access_token"] forKey:@"redditToken"];
             [self->defaults setObject:[NSDate date] forKey:@"redditCheck"];
             [self->defaults synchronize];
             [self retrieveNewsJson];
         }
         if (error) {
-            NSLog(@"[Zebra] Error getting reddit token: %@", error);
+            ZBLog(@"[Zebra] Error getting reddit token: %@", error);
         }
     }] resume];
 }
@@ -117,35 +119,35 @@
     NSMutableURLRequest *request = [NSMutableURLRequest new];
     [request setURL:[NSURL URLWithString:@"https://oauth.reddit.com/r/jailbreak"]];
     [request setHTTPMethod:@"GET"];
-    //[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
+    // [request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
     [request setValue:[NSString stringWithFormat:@"Zebra %@, iOS %@", PACKAGE_VERSION, [[UIDevice currentDevice] systemVersion]] forHTTPHeaderField:@"User-Agent"];
     [request setValue:[NSString stringWithFormat:@"Bearer %@", [defaults valueForKey:@"redditToken"]] forHTTPHeaderField:@"Authorization"];
     [[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         if (data) {
             NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:kNilOptions error:nil];
-            //NSLog(@"DIcT %@", json);
+            // NSLog(@"DIcT %@", json);
             NSDictionary *dataDict = [json objectForKey:@"data"];
-            //NSLog(@"DataDict %@", dataDict);
+            // NSLog(@"DataDict %@", dataDict);
             for (NSDictionary *dict in [dataDict objectForKey:@"children"]) {
                 NSDictionary *postData = [dict objectForKey:@"data"];
-                //NSLog(@"POST DATA %@", postData);
+                // NSLog(@"POST DATA %@", postData);
                 if ([postData objectForKey:@"title"] != [NSNull null]) {
-                    //if ([[postData objectForKey:@"link_flair_css_class"] isEqualToString:@"release"] || [[postData objectForKey:@"link_flair_css_class"] isEqualToString:@"update"] || [[postData objectForKey:@"link_flair_css_class"] isEqualToString:@"upcoming"] || [[postData objectForKey:@"link_flair_css_class"] isEqualToString:@"news"] || [[postData objectForKey:@"link_flair_css_class"] isEqualToString:@"jailbreak release"]) {
+                    // if ([[postData objectForKey:@"link_flair_css_class"] isEqualToString:@"release"] || [[postData objectForKey:@"link_flair_css_class"] isEqualToString:@"update"] || [[postData objectForKey:@"link_flair_css_class"] isEqualToString:@"upcoming"] || [[postData objectForKey:@"link_flair_css_class"] isEqualToString:@"news"] || [[postData objectForKey:@"link_flair_css_class"] isEqualToString:@"jailbreak release"]) {
                     NSArray *post = [self getTags:[postData valueForKey:@"title"]];
                     for (NSString *string in self->availableOptions) {
                         if ([post containsObject:string] && ![self.redditPosts containsObject:postData]) {
                             [self.redditPosts addObject:postData];
-                            //NSLog(@"redditposts %@", self.redditPosts);
+                            // NSLog(@"redditposts %@", self.redditPosts);
                         }
                     }
                 }
             }
         }
         if (error) {
-            NSLog(@"[Zebra] Error retrieving news JSON %@", error);
+            ZBLog(@"[Zebra] Error retrieving news JSON %@", error);
         }
         dispatch_async(dispatch_get_main_queue(), ^{
-            //[self animateTable];
+            // [self animateTable];
             [self createHeader];
         });
     }] resume];
@@ -179,7 +181,6 @@
 
 - (void)refreshTable {
     dispatch_async(dispatch_get_main_queue(), ^{
-        self.batchLoadCount = 500;
         self->packages = [self.databaseManager packagesFromRepo:NULL inSection:NULL numberOfPackages:[self useBatchLoad] ? self.batchLoadCount : -1 startingAt:0];
         self->databaseRow = self.batchLoadCount - 1;
         self->totalNumberOfPackages = [self.databaseManager numberOfPackagesInRepo:NULL section:NULL];
@@ -313,9 +314,7 @@
 - (NSArray *)tableView:(UITableView *)tableView editActionsForRowAtIndexPath:(NSIndexPath *)indexPath {
     ZBPackage *package = [self packageAtIndexPath:indexPath];
     return [ZBPackageActionsManager rowActionsForPackage:package indexPath:indexPath viewController:self parent:nil completion:^(void) {
-        // TODO: Reloading the entire Changes table for each swipe is a bit too much, especially for slow devices
-        ZBPackageTableViewCell *cell = (ZBPackageTableViewCell *)[self tableView:tableView cellForRowAtIndexPath:indexPath];
-        [cell updateData:package];
+        [tableView reloadSections:[NSIndexSet indexSetWithIndex:indexPath.section] withRowAnimation:UITableViewRowAnimationNone];
     }];
 }
 
@@ -343,18 +342,14 @@
     }
 }
 
-- (UIViewController *)previewingContext:(id<UIViewControllerPreviewing>)previewingContext viewControllerForLocation:(CGPoint)location {
+- (UIViewController *)previewingContext:(id <UIViewControllerPreviewing>)previewingContext viewControllerForLocation:(CGPoint)location {
     NSIndexPath *indexPath = [self.tableView indexPathForRowAtPoint:location];
-    
     ZBPackageTableViewCell *cell = [self.tableView cellForRowAtIndexPath:indexPath];
     previewingContext.sourceRect = cell.frame;
-    
     ZBPackageDepictionViewController *packageDepictionVC = (ZBPackageDepictionViewController*)[self.storyboard instantiateViewControllerWithIdentifier:@"packageDepictionVC"];
     
     [self setDestinationVC:indexPath destination:packageDepictionVC];
-    
     return packageDepictionVC;
-    
 }
 
 - (void)previewingContext:(id<UIViewControllerPreviewing>)previewingContext commitViewController:(UIViewController *)viewControllerToCommit {
@@ -367,7 +362,6 @@
     [self.navigationController.navigationBar setTintColor:[UIColor tintColor]];
     [self.collectionView setBackgroundColor:[UIColor tableViewBackgroundColor]];
 }
-
 
 #pragma mark News
 - (UICollectionViewCell *)collectionView:(nonnull UICollectionView *)collectionView cellForItemAtIndexPath:(nonnull NSIndexPath *)indexPath {
@@ -394,7 +388,7 @@
         cell.postTitle.text = @"Error";
     }
     if ([dict objectForKey:@"url"] != [NSNull null]) {
-        //[cell setRedditLink:[NSURL URLWithString:[dict objectForKey:@"url"]]];
+        // [cell setRedditLink:[NSURL URLWithString:[dict objectForKey:@"url"]]];
         [cell setRedditLink:[NSURL URLWithString:[NSString stringWithFormat:@"https://reddit.com/%@", [dict objectForKey:@"id"]]]];
         [cell setRedditID:[dict objectForKey:@"id"]];
     } else {
@@ -405,7 +399,7 @@
         if ([previews objectForKey:@"images"]) {
             NSArray *images = [previews objectForKey:@"images"];
             NSDictionary *imageDict = [images firstObject];
-            //NSLog(@"IMAGE %@", imageDict);
+            // ZBLog(@"IMAGE %@", imageDict);
             if ([imageDict objectForKey:@"source"] && [imageDict objectForKey:@"source"] != [NSNull null]) {
                 NSString *link = [imageDict valueForKeyPath:@"source.url"];
                 link = [link stringByReplacingOccurrencesOfString:@"&amp;" withString:@"&"];
@@ -491,7 +485,7 @@
     } else {
         [self.redditPosts removeAllObjects];
         [self hideHeader];
-        //[self animateTable];
+        // [self animateTable];
     }
 }
 

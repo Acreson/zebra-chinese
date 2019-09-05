@@ -2,7 +2,7 @@
 //  ZBPackageActionsManager.m
 //  Zebra
 //
-//  Created by Thatchapon Unprasert on 13/5/2562 BE.
+//  Created by Thatchapon Unprasert on 13/5/2019
 //  Copyright © 2019 Wilson Styres. All rights reserved.
 //
 
@@ -194,7 +194,7 @@
     NSMutableArray *actions = [self actions:2 forPackage:package indexPath:nil viewController:vc parent:parent completion:NULL];
     
     if ([package ignoreUpdates]) {
-        UIAlertAction *unignore = [UIAlertAction actionWithTitle:@"取消忽略" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        UIAlertAction *unignore = [UIAlertAction actionWithTitle:@"显示更新" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
             [package setIgnoreUpdates:false];
         }];
         

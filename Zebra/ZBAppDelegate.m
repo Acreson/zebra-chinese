@@ -119,7 +119,7 @@ static const NSInteger kZebraMaxTime = 60 * 60 * 24; // 1 day
     ZBTabBarController *tabController = (ZBTabBarController *)((ZBAppDelegate *)[[UIApplication sharedApplication] delegate]).window.rootViewController;
     if (tabController != NULL) {
         dispatch_async(dispatch_get_main_queue(), ^{
-            UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:@"发生了一个错误" message:error preferredStyle:UIAlertControllerStyleAlert];
+            UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:@"😂幼稚的错误😂" message:error preferredStyle:UIAlertControllerStyleAlert];
             
             if (action != nil && block != NULL) {
                 UIAlertAction *blockAction = [UIAlertAction actionWithTitle:action style:UIAlertActionStyleDefault handler:^(UIAlertAction *action_) {
@@ -127,7 +127,7 @@ static const NSInteger kZebraMaxTime = 60 * 60 * 24; // 1 day
                 }];
                 [errorAlert addAction:blockAction];
             }
-            UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"关闭" style:UIAlertActionStyleCancel handler:nil];
+            UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"我知道错了" style:UIAlertActionStyleCancel handler:nil];
             [errorAlert addAction:okAction];
             [tabController presentViewController:errorAlert animated:true completion:nil];
         });
@@ -171,7 +171,7 @@ static const NSInteger kZebraMaxTime = 60 * 60 * 24; // 1 day
     int index = (int)[choices indexOfObject:[url scheme]];
     
     switch (index) {
-        case 0: { //file
+        case 0: { // file
             if ([[url pathExtension] isEqualToString:@"deb"]) {
                 if (![ZBDevice needsSimulation]) {
                     UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"Main" bundle: nil];
@@ -193,7 +193,7 @@ static const NSInteger kZebraMaxTime = 60 * 60 * 24; // 1 day
             }
             break;
         }
-        case 1: { //zbra
+        case 1: { // zbra
             ZBTabBarController *tabController = (ZBTabBarController *)self.window.rootViewController;
             NSArray *components = [[url host] componentsSeparatedByString:@"/"];
             choices = @[@"home", @"sources", @"changes", @"packages", @"search"];
@@ -240,17 +240,14 @@ static const NSInteger kZebraMaxTime = 60 * 60 * 24; // 1 day
             }
             break;
         }
-        case 2: { //cydia
+        case 2: { // cydia
             ZBTabBarController *tabController = (ZBTabBarController *)self.window.rootViewController;
             NSArray *components = [[url host] componentsSeparatedByString:@"/"];
             choices = @[@"home", @"sources", @"changes", @"installed", @"package", @"search", @"url"];
             index = (int)[choices indexOfObject:components[0]];
             
             switch (index) {
-                case 0:
-                case 1:
-                case 2:
-                case 3: {
+                case 0 ... 3: {
                     [tabController setSelectedIndex:index];
                     break;
                 }
@@ -289,20 +286,20 @@ static const NSInteger kZebraMaxTime = 60 * 60 * 24; // 1 day
             }
             break;
         }
-        case 3: { //sileo
+        case 3: { // sileo
             NSString *sourceApplication = [options objectForKey:@"UIApplicationOpenURLOptionsSourceApplicationKey"];
             if ([sourceApplication isEqualToString:@"com.apple.SafariViewService"]) {
                 NSArray *components = [[url host] componentsSeparatedByString:@"/"];
                 choices = @[@"authentication_success", @"payment_completed"];
                 index = (int)[choices indexOfObject:components[0]];
                 switch (index) {
-                    case 0: { //Authenticated
+                    case 0: { // Authenticated
                         NSDictionary *data = [NSDictionary dictionaryWithObject:url forKey:@"callBack"];
                         [[NSNotificationCenter defaultCenter] postNotificationName:@"AuthenticationCallBack" object:self userInfo:data];
                         break;
                     }
-                    case 1: { //Purchase
-                        //Reading their documentation, a callback may not be required here. I will leave this case switch for future use however, in case I am proven wrong.
+                    case 1: { // Purchase
+                        // Reading their documentation, a callback may not be required here. I will leave this case switch for future use however, in case I am proven wrong.
                         break;
                     }
                 }
@@ -311,7 +308,7 @@ static const NSInteger kZebraMaxTime = 60 * 60 * 24; // 1 day
             break;
             
         }
-        default: { //WHO ARE YOU????
+        default: { // WHO ARE YOU????
             return false;
         }
     }
@@ -321,13 +318,13 @@ static const NSInteger kZebraMaxTime = 60 * 60 * 24; // 1 day
 
 - (void)application:(UIApplication *)application performActionForShortcutItem:(UIApplicationShortcutItem *)shortcutItem completionHandler:(void (^)(BOOL))completionHandler {
     ZBTabBarController *tabController = (ZBTabBarController *)self.window.rootViewController;
-    if ([shortcutItem.type isEqualToString:@"搜索"]) {
+    if ([shortcutItem.type isEqualToString:@"Search"]) {
         [tabController setSelectedIndex:ZBTabSearch];
         
         ZBSearchViewController *searchController = (ZBSearchViewController *)((UINavigationController *)[tabController selectedViewController]).viewControllers[0];
         [searchController handleURL:NULL];
     }
-    else if ([shortcutItem.type isEqualToString:@"添加"]) {
+    else if ([shortcutItem.type isEqualToString:@"Add"]) {
         [tabController setSelectedIndex:ZBTabSources];
         
         ZBRepoListTableViewController *repoController = (ZBRepoListTableViewController *)((UINavigationController *)[tabController selectedViewController]).viewControllers[0];

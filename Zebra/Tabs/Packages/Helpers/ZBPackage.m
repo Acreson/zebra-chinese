@@ -7,6 +7,7 @@
 //
 
 #import "ZBPackage.h"
+#import <ZBLog.h>
 #import <ZBDevice.h>
 #import <Parsel/vercmp.h>
 #import <Repos/Helpers/ZBRepo.h>
@@ -15,6 +16,11 @@
 #import <NSTask.h>
 #import <Database/ZBDatabaseManager.h>
 #import <Database/ZBColumn.h>
+
+@interface ZBPackage () {
+    NSUInteger possibleActions;
+}
+@end
 
 @implementation ZBPackage
 
@@ -57,14 +63,13 @@
     return [stringRead componentsSeparatedByString:@"\n"];
 }
 
-+ (BOOL)containsTweak:(NSString *)packageID {
-    NSLog(@"[Zebra] Searching %@ for tweak", packageID);
++ (BOOL)containsRespringable:(NSString *)packageID {
     if ([ZBDevice needsSimulation]) {
-        return true;
+        return YES;
     }
+    ZBLog(@"[Zebra] Searching %@ for respringable", packageID);
     if ([packageID hasSuffix:@".deb"]) {
-        NSLog(@"[Zebra] Trying to find package id");
-        //do the ole dpkg -I
+        // do the ole dpkg -I
         NSTask *task = [[NSTask alloc] init];
         [task setLaunchPath:@"/usr/bin/dpkg"];
         [ZBDevice asRoot:task arguments:@[@"-I", packageID, @"control"]];
@@ -85,9 +90,8 @@
             if (pair.count != 2) pair = [line componentsSeparatedByString:@":"];
             if (pair.count != 2) return;
             NSString *key = [pair[0] stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet];
-            NSLog(@"[Zebra] %@", pair);
             if ([key isEqualToString:@"Package"]) {
-                contains = [self containsTweak:[pair[1] stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet]];
+                contains = [self containsRespringable:[pair[1] stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet]];
                 return;
             }
         }];
@@ -98,23 +102,25 @@
     NSArray *files = [self filesInstalled:packageID];
     
     for (NSString *path in files) {
-        if ([path rangeOfString:@"/Library/MobileSubstrate/DynamicLibraries"].location != NSNotFound) {
-            if ([path rangeOfString:@".dylib"].location != NSNotFound) {
-                return true;
-            }
+        // Usual tweaks
+        if ([path rangeOfString:@"/Library/MobileSubstrate/DynamicLibraries"].location != NSNotFound && [path hasSuffix:@".dylib"]) {
+            return YES;
+        }
+        // CC bundles
+        if ([path rangeOfString:@"/Library/ControlCenter/Bundles"].location != NSNotFound && [path hasSuffix:@".bundle"]) {
+            return YES;
         }
     }
-    return false;
+    return NO;
 }
 
 + (BOOL)containsApp:(NSString *)packageID {
-    NSLog(@"[Zebra] Searching %@ for app bundle", packageID);
+    ZBLog(@"[Zebra] Searching %@ for app bundle", packageID);
     if ([ZBDevice needsSimulation]) {
         return true;
     }
     if ([packageID hasSuffix:@".deb"]) {
-        NSLog(@"[Zebra] Trying to find package id");
-        //do the ole dpkg -I
+        // do the ole dpkg -I
         NSTask *task = [[NSTask alloc] init];
         [task setLaunchPath:@"/usr/bin/dpkg"];
         [ZBDevice asRoot:task arguments:@[@"-I", packageID, @"control"]];
@@ -135,10 +141,9 @@
             if (pair.count != 2) pair = [line componentsSeparatedByString:@":"];
             if (pair.count != 2) return;
             NSString *key = [pair[0] stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet];
-            NSLog(@"[Zebra] %@", pair);
             if ([key isEqualToString:@"Package"]) {
                 contains = [self containsApp:[pair[1] stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet]];
-                return;
+                *stop = YES;
             }
         }];
         
@@ -149,7 +154,7 @@
     
     for (NSString *path in files) {
         if ([path rangeOfString:@".app/Info.plist"].location != NSNotFound) {
-            return true;
+            return YES;
         }
     }
     return false;
@@ -157,7 +162,7 @@
 
 + (NSString *)pathForApplication:(NSString *)packageID {
     if ([packageID hasSuffix:@".deb"]) {
-        //do the ole dpkg -I
+        // do the ole dpkg -I
         NSTask *task = [[NSTask alloc] init];
         [task setLaunchPath:@"/usr/bin/dpkg"];
         [ZBDevice asRoot:task arguments:@[@"-I", packageID, @"control"]];
@@ -180,7 +185,7 @@
             NSString *key = [pair[0] stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet];
             if ([key isEqualToString:@"Package"]) {
                 path = [self pathForApplication:[pair[1] stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet]];
-                return;
+                *stop = YES;
             }
         }];
         
@@ -215,6 +220,28 @@
     return self;
 }
 
++ (NSCharacterSet *)delimiters {
+    static NSCharacterSet *charSet = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        charSet = [NSCharacterSet characterSetWithCharactersInString:@","];
+    });
+    return charSet;
+}
+
+- (NSArray *)extract:(const char *)packages_ {
+    NSCharacterSet *delimiters = [[self class] delimiters];
+    NSArray *packages = packages_ != 0 ? [[NSString stringWithUTF8String:packages_] componentsSeparatedByCharactersInSet:delimiters] : NULL;
+    if (packages) {
+        NSMutableArray *finalPackages = [NSMutableArray array];
+        for (NSString *line in packages) {
+            [finalPackages addObject:[line stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]];
+        }
+        return finalPackages;
+    }
+    return packages;
+}
+
 - (id)initWithSQLiteStatement:(sqlite3_stmt *)statement {
     self = [super init];
     
@@ -236,7 +263,7 @@
         const char *iconChars =             (const char *)sqlite3_column_text(statement, ZBPackageColumnIconURL);
         sqlite3_int64 lastSeen =            sqlite3_column_int64(statement, ZBPackageColumnLastSeen);
         
-        [self setIdentifier:[NSString stringWithUTF8String:packageIDChars]]; //This should never be NULL
+        [self setIdentifier:[NSString stringWithUTF8String:packageIDChars]]; // This should never be NULL
         [self setName:packageNameChars != 0 ? [NSString stringWithUTF8String:packageNameChars] : self.identifier]; // fall back to ID if NULL
         [self setVersion:versionChars != 0 ? [NSString stringWithUTF8String:versionChars] : NULL];
         [self setShortDescription:shortDescriptionChars != 0 ? [NSString stringWithUTF8String:shortDescriptionChars] : NULL];
@@ -248,29 +275,14 @@
         [self setIconPath:iconChars != 0 ? [NSString stringWithUTF8String:iconChars] : NULL];
         
         [self setTags:tagChars != 0 ? [[NSString stringWithUTF8String:tagChars] componentsSeparatedByString:@", "] : NULL];
-        if ([tags count] == 1 && [tags[0] containsString:@","]) { //Fix crimes against humanity @Dnasty
+        if ([tags count] == 1 && [tags[0] containsString:@","]) { // Fix crimes against humanity @Dnasty
             tags = [tags[0] componentsSeparatedByString:@","];
         }
         
-        [self setDependsOn:dependsChars != 0 ? [[NSString stringWithUTF8String:dependsChars] componentsSeparatedByString:@", "] : NULL];
-        if ([dependsOn count] == 1 && [dependsOn[0] containsString:@","]) { //Fix crimes against humanity @Dnasty
-            dependsOn = [dependsOn[0] componentsSeparatedByString:@","];
-        }
-        
-        [self setConflictsWith:conflictsChars != 0 ? [[NSString stringWithUTF8String:conflictsChars] componentsSeparatedByString:@", "] : NULL];
-        if ([conflictsWith count] == 1 && [conflictsWith[0] containsString:@","]) { //Fix crimes against humanity @Dnasty
-            conflictsWith = [conflictsWith[0] componentsSeparatedByString:@","];
-        }
-        
-        [self setProvides:providesChars != 0 ? [[NSString stringWithUTF8String:providesChars] componentsSeparatedByString:@", "] : NULL];
-        if ([provides count] == 1 && [provides[0] containsString:@","]) { //Fix crimes against humanity @Dnasty
-            provides = [provides[0] componentsSeparatedByString:@","];
-        }
-        
-        [self setProvides:replacesChars != 0 ? [[NSString stringWithUTF8String:replacesChars] componentsSeparatedByString:@", "] : NULL];
-        if ([replaces count] == 1 && [replaces[0] containsString:@","]) { //Fix crimes against humanity @Dnasty
-            replaces = [replaces[0] componentsSeparatedByString:@","];
-        }
+        [self setDependsOn:[self extract:dependsChars]];
+        [self setConflictsWith:[self extract:conflictsChars]];
+        [self setProvides:[self extract:providesChars]];
+        [self setReplaces:[self extract:replacesChars]];
         
         int repoID = sqlite3_column_int(statement, ZBPackageColumnRepoID);
         if (repoID > 0) {
@@ -282,7 +294,7 @@
         
         NSString *sectionStripped = [section stringByReplacingOccurrencesOfString:@" " withString:@"_"];
         if ([section characterAtIndex:[section length] - 1] == ')') {
-            NSArray *items = [section componentsSeparatedByString:@"("]; //Remove () from section
+            NSArray *items = [section componentsSeparatedByString:@"("]; // Remove () from section
             sectionStripped = [items[0] substringToIndex:[items[0] length] - 1];
         }
         [self setSectionImageName:sectionStripped];
@@ -299,11 +311,15 @@
     if (![object isKindOfClass:[ZBPackage class]])
         return NO;
     
-    return ([[object identifier] isEqual:[self identifier]] && [[object version] isEqual:[self version]]);
+    return ([[object identifier] isEqual:self.identifier] && [[object version] isEqual:[self version]]);
 }
 
 - (BOOL)sameAs:(ZBPackage *)package {
-    return [[self identifier] isEqualToString:[package identifier]];
+    return [self.identifier isEqualToString:package.identifier];
+}
+
+- (BOOL)sameAsStricted:(ZBPackage *)package {
+    return [self sameAs:package] && [[self version] isEqualToString:[package version]];
 }
 
 - (NSString *)description {
@@ -364,7 +380,7 @@
         return readError.localizedDescription;
     }
     
-    NSString *packageIdentifier = [[self identifier] stringByAppendingString:@"\n"];
+    NSString *packageIdentifier = [self.identifier stringByAppendingString:@"\n"];
     NSString *packageVersion = [[self version] stringByAppendingString:@"\n"];
     
     NSScanner *scanner = [[NSScanner alloc] initWithString:contents];
@@ -421,7 +437,7 @@
 }
 
 - (BOOL)isInstalled:(BOOL)strict {
-    if ([repo repoID] <= 0) { //Package is in repoID 0 or -1 and is installed
+    if ([repo repoID] <= 0) { // Package is in repoID 0 or -1 and is installed
         return true;
     }
     else {
@@ -432,7 +448,7 @@
 
 - (BOOL)isReinstallable {
     ZBDatabaseManager *databaseManager = [ZBDatabaseManager sharedInstance];
-    return [databaseManager packageIsAvailable:self versionStrict:true];
+    return [databaseManager packageIsAvailable:self versionStrict:YES];
 }
 
 - (NSArray <ZBPackage *> *)otherVersions {
@@ -443,29 +459,30 @@
 }
 
 - (NSUInteger)possibleActions {
-    NSUInteger actions = 0;
-    // Bits order: Select Ver. - Upgrade - Reinstall - Remove - Install
-    if ([self isInstalled:false]) {
-        ZBDatabaseManager *databaseManager = [ZBDatabaseManager sharedInstance];
-        if ([self isReinstallable]) {
-            actions |= ZBQueueTypeReinstall; // Reinstall
+    if (possibleActions == 0) {
+        // Bits order: Select Ver. - Upgrade - Reinstall - Remove - Install
+        if ([self isInstalled:false]) {
+            ZBDatabaseManager *databaseManager = [ZBDatabaseManager sharedInstance];
+            if ([self isReinstallable]) {
+                possibleActions |= ZBQueueTypeReinstall; // Reinstall
+            }
+            if ([databaseManager packageHasUpdate:self]) {
+                // A package update is even possible for a package installed from repo A, repo A got deleted, and an update comes from repo B
+                possibleActions |= ZBQueueTypeUpgrade; // Upgrade
+            }
+            possibleActions |= ZBQueueTypeRemove; // Remove
         }
-        if ([databaseManager packageHasUpdate:self]) {
-            // A package update is even possible for a package installed from repo A, repo A got deleted, and an update comes from repo B
-            actions |= ZBQueueTypeUpgrade; // Upgrade
+        else {
+            possibleActions |= ZBQueueTypeInstall; // Install
         }
-        actions |= ZBQueueTypeRemove; // Remove
+        NSArray *otherVersions = [self otherVersions];
+        if (otherVersions.count) {
+            // Calculation of otherVersions will ignore local packages and packages of the same version as the current one
+            // Therefore, there will only be packages of the same identifier but different version, though not necessarily downgrades
+            possibleActions |= ZBQueueTypeSelectable; // Select other versions
+        }
     }
-    else {
-        actions |= ZBQueueTypeInstall; // Install
-    }
-    NSArray *otherVersions = [self otherVersions];
-    if (otherVersions.count) {
-        // Calculation of otherVersions will ignore local packages and packages of the same version as the current one
-        // Therefore, there will only be packages of the same identifier but different version, though not necessarily downgrades
-        actions |= ZBQueueTypeSelectable; // Select other versions
-    }
-    return actions;
+    return possibleActions;
 }
 
 - (NSString *)longDescription {
@@ -486,7 +503,9 @@
 
 - (ZBPackage *)installableCandidate {
     ZBDatabaseManager *databaseManager = [ZBDatabaseManager sharedInstance];
-    return [databaseManager packageForID:[self identifier] thatSatisfiesComparison:@"<=" ofVersion:[self version] checkInstalled:false checkProvides:true];
+    ZBPackage *candidate = [databaseManager packageForID:self.identifier thatSatisfiesComparison:@"<=" ofVersion:[self version] checkInstalled:false checkProvides:true];
+    ZBLog(@"Installable candidate for %@ is %@", self, candidate);
+    return candidate;
 }
 
 - (NSDate *)installedDate {

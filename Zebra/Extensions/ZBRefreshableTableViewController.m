@@ -2,7 +2,7 @@
 //  ZBRefreshableTableViewController.m
 //  Zebra
 //
-//  Created by Thatchapon Unprasert on 17/6/2562 BE.
+//  Created by Thatchapon Unprasert on 17/6/2019
 //  Copyright © 2019 Wilson Styres. All rights reserved.
 //
 
@@ -13,24 +13,45 @@
 #import <Repos/Helpers/ZBRepo.h>
 #import <Packages/Controllers/ZBPackageListTableViewController.h>
 
+@interface ZBRefreshableTableViewController () {
+    UIRefreshControl *refreshControl;
+}
+@end
+
 @implementation ZBRefreshableTableViewController
 
 @synthesize databaseManager;
 
++ (BOOL)supportRefresh {
+    return YES;
+}
+
 - (void)viewDidLoad {
     [super viewDidLoad];
     databaseManager = [ZBDatabaseManager sharedInstance];
-    self.refreshControl = [[UIRefreshControl alloc] init];
-    [self.refreshControl addTarget:self action:@selector(refreshSources:) forControlEvents:UIControlEventValueChanged];
+    if ([[self class] supportRefresh]) {
+        refreshControl = [[UIRefreshControl alloc] init];
+        [refreshControl addTarget:self action:@selector(refreshSources:) forControlEvents:UIControlEventValueChanged];
+    }
 }
 
 - (void)setRepoRefreshIndicatorVisible:(BOOL)visible {
+    if (![[self class] supportRefresh]) {
+        return;
+    }
     [(ZBTabBarController *)self.tabBarController setRepoRefreshIndicatorVisible:visible];
 }
 
 - (void)refreshSources:(id)sender {
-    if ([databaseManager isDatabaseBeingUpdated])
+    if (![[self class] supportRefresh]) {
         return;
+    }
+    if ([databaseManager isDatabaseBeingUpdated]) {
+        if (!refreshControl.refreshing) {
+            [refreshControl beginRefreshing];
+        }
+        return;
+    }
     [databaseManager addDatabaseDelegate:self];
     [self setRepoRefreshIndicatorVisible:YES];
     BOOL singleRepo = NO;
@@ -46,23 +67,42 @@
     }
 }
 
+- (void)didEndRefreshing {}
+
 - (void)databaseCompletedUpdate:(int)packageUpdates {
+    if (![[self class] supportRefresh]) {
+        return;
+    }
     if (packageUpdates != -1) {
         [(ZBTabBarController *)self.tabBarController setPackageUpdateBadgeValue:packageUpdates];
     }
     [self setRepoRefreshIndicatorVisible:NO];
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self.refreshControl endRefreshing];
+        [self->refreshControl endRefreshing];
+        [self didEndRefreshing];
     });
 }
 
 - (void)databaseStartedUpdate {
+    if (![[self class] supportRefresh]) {
+        return;
+    }
     [self setRepoRefreshIndicatorVisible:YES];
 }
 
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
     self.tableView.backgroundColor = [UIColor tableViewBackgroundColor];
+    self.tableView.separatorColor = [UIColor cellSeparatorColor];
+    if ([[self class] supportRefresh] && refreshControl) {
+        if ([databaseManager isDatabaseBeingUpdated]) {
+            [refreshControl removeFromSuperview];
+            self.refreshControl = nil;
+        }
+        else {
+            self.refreshControl = refreshControl;
+        }
+    }
 }
 
 - (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {

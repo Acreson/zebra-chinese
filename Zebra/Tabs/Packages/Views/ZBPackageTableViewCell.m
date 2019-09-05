@@ -19,8 +19,6 @@
 - (void)awakeFromNib {
     [super awakeFromNib];
     self.backgroundColor = [UIColor cellBackgroundColor];
-    //self.backgroundContainerView.layer.cornerRadius = 5;
-    //self.backgroundContainerView.layer.masksToBounds = YES;
     self.isInstalledImageView.hidden = YES;
     self.isPaidImageView.hidden = YES;
     self.queueStatusLabel.hidden = YES;
@@ -29,7 +27,7 @@
     self.selectionStyle = UITableViewCellSelectionStyleNone;
     self.iconImageView.layer.cornerRadius = 10;
     self.iconImageView.layer.shadowRadius = 3;
-    self.iconImageView.clipsToBounds = TRUE;
+    self.iconImageView.clipsToBounds = YES;
 }
 
 - (void)updateData:(ZBPackage *)package {
@@ -48,8 +46,8 @@
     }
     
     if (package.iconPath) {
-        //[self.iconImageView setImageFromURL:[NSURL URLWithString:package.iconPath] placeHolderImage:sectionImage];
-        //[self.iconImageView loadImageFromURL:[NSURL URLWithString:package.iconPath] placeholderImage:sectionImage cachingKey:package.name];
+        // [self.iconImageView setImageFromURL:[NSURL URLWithString:package.iconPath] placeHolderImage:sectionImage];
+        // [self.iconImageView loadImageFromURL:[NSURL URLWithString:package.iconPath] placeholderImage:sectionImage cachingKey:package.name];
         [self.iconImageView sd_setImageWithURL:[NSURL URLWithString:package.iconPath] placeholderImage:sectionImage];
     }
     else {
@@ -80,7 +78,7 @@
 }
 
 - (void)updateQueueStatus:(ZBPackage *)package {
-    ZBQueueType queue = [[ZBQueue sharedInstance] queueStatusForPackageIdentifier:package.identifier];
+    ZBQueueType queue = [[ZBQueue sharedInstance] queueStatusForPackage:package];
     if (queue) {
         NSString *status = [[ZBQueue sharedInstance] queueToKey:queue];
         self.queueStatusLabel.hidden = NO;
@@ -112,14 +110,8 @@
             [cleanedStrings addObject:cut];
         }
     }
-    
     return [cleanedStrings componentsJoinedByString:@" "];
 }
-
-/*- (void)layoutSubviews {
-    [super layoutSubviews];
-    self.contentView.frame = UIEdgeInsetsInsetRect(self.contentView.frame, UIEdgeInsetsMake(0, 0, 5, 0));
-}*/
 
 - (void)setHighlighted:(BOOL)highlighted animated:(BOOL)animated {
     [super setHighlighted:highlighted animated:animated];

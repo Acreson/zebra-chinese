@@ -34,7 +34,7 @@
     [super viewDidLoad];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(darkMode:) name:@"darkMode" object:nil];
     _keychain = [UICKeyChainStore keyChainStoreWithService:[ZBAppDelegate bundleID] accessGroup:nil];
-    //For iOS 9 and 10 Sileo Purchases
+    // For iOS 9 and 10 Sileo Purchases
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(authenticationCallBack:) name:@"AuthenticationCallBack" object:nil];
     
     databaseManager = [ZBDatabaseManager sharedInstance];
@@ -56,9 +56,7 @@
         ivc.repoEndpoint = self.repoEndpoint;
         ivc.repoImage = [self->databaseManager iconForRepo:self->repo];
         [self.navigationController pushViewController:ivc animated:YES];
-        
     }];
-    
     
     UIImage *image = [databaseManager iconForRepo:repo];
     if (image != NULL) {
@@ -160,15 +158,15 @@
     [self.featuredCollection setContentInset:UIEdgeInsetsMake(0.f, 15.f, 0.f, 15.f)];
     self.featuredCollection.backgroundColor = [UIColor clearColor];
     CGFloat height = CGSizeFromString(_fullJSON[@"itemSize"]).height + 10;
-    //self.featuredCollection.collectionViewLayout.collectionViewContentSize.height = height;
-    /*self.featuredCollection.frame = CGRectMake (self.featuredCollection.frame.origin.x,self.featuredCollection.frame.origin.y,self.featuredCollection.frame.size.width,height);*/ //objective c
-    //[self.featuredCollection setNeedsLayout];
-    //[self.featuredCollection reloadData];
+    // self.featuredCollection.collectionViewLayout.collectionViewContentSize.height = height;
+    /*self.featuredCollection.frame = CGRectMake (self.featuredCollection.frame.origin.x,self.featuredCollection.frame.origin.y,self.featuredCollection.frame.size.width,height);*/ // objective c
+    // [self.featuredCollection setNeedsLayout];
+    // [self.featuredCollection reloadData];
     [UIView animateWithDuration:.25f animations:^{
         self.tableView.tableHeaderView.frame = CGRectMake(self.featuredCollection.frame.origin.x, self.featuredCollection.frame.origin.y, self.featuredCollection.frame.size.width, height);
     }];
     [self.tableView endUpdates];
-    //[self.tableView reloadData];
+    // [self.tableView reloadData];
 }
 
 - (void)setupRepoLogin {
@@ -199,7 +197,7 @@
                                         
                                         securedKeychain[[self.repoEndpoint stringByAppendingString:@"payment"]] = payment;
                                     });
-                                    //[self.repo setLoggedIn:YES];
+                                    // [self.repo setLoggedIn:YES];
                                     [self.navigationItem setRightBarButtonItem:self.purchased];
                                 }
                                 else {
@@ -238,7 +236,7 @@
     NSString *token = queryByKeys[@"token"];
     NSString *payment = queryByKeys[@"payment_secret"];
     self->_keychain[self.repoEndpoint] = token;
-    //self->_keychain[[self.repoEndpoint stringByAppendingString:@"payment"]] = payment;
+    // self->_keychain[[self.repoEndpoint stringByAppendingString:@"payment"]] = payment;
     UICKeyChainStore *securedKeychain = [UICKeyChainStore keyChainStoreWithService:[ZBAppDelegate bundleID] accessGroup:nil];
     securedKeychain[[self.repoEndpoint stringByAppendingString:@"payment"]] = nil;
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
@@ -320,14 +318,14 @@
     }
 }
 
-//3D Touch Actions
+// 3D Touch Actions
 
 - (NSArray *)previewActionItems {
     UIPreviewAction *refresh = [UIPreviewAction actionWithTitle:@"刷新" style:UIPreviewActionStyleDefault handler:^(UIPreviewAction * _Nonnull action, UIViewController * _Nonnull previewViewController) {
-//        ZBDatabaseManager *databaseManager = [[ZBDatabaseManager alloc] init];
-//        [databaseManager updateDatabaseUsingCaching:true singleRepo:self->repo completion:^(BOOL success, NSError * _Nonnull error) {
-//            NSLog(@"Updated repo %@", self->repo);
-//        }];
+        //        ZBDatabaseManager *databaseManager = [[ZBDatabaseManager alloc] init];
+        //        [databaseManager updateDatabaseUsingCaching:true singleRepo:self->repo completion:^(BOOL success, NSError * _Nonnull error) {
+        //            NSLog(@"Updated repo %@", self->repo);
+        //        }];
     }];
     
     if ([repo canDelete]) {
@@ -349,11 +347,11 @@
     cell.packageID = currentBanner[@"package"];
     [cell.titleLabel setText:currentBanner[@"title"]];
     
-    //dispatch_async(dispatch_get_main_queue(), ^{
+    // dispatch_async(dispatch_get_main_queue(), ^{
         if ([[self.fullJSON objectForKey:@"itemCornerRadius"] doubleValue]) {
             cell.layer.cornerRadius = [self->_fullJSON[@"itemCornerRadius"] doubleValue];
         }
-    //});
+    // });
     
     return cell;
 }

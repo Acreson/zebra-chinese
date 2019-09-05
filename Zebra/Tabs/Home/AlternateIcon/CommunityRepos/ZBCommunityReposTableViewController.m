@@ -187,11 +187,11 @@ enum ZBSourcesOrder {
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
     switch (section) {
         case 0:
-            return @"克隆源";
+            return @"克隆源(快捷操作便于用户)";
         case 1:
-            return @"环境源";
+            return @"必备源(第一次使用斑马必须添加)";
         case 2:
-            return @"推荐源";
+            return @"推荐源(带⭐️必加依赖源)";
         default:
             return nil;
     }
@@ -261,9 +261,9 @@ enum ZBSourcesOrder {
                             [weakSelf presentViewController:navCon animated:true completion:nil];
                         }
                         /*else {
-                            NSURL *failedURL = [failedURLs[0] URLByDeletingLastPathComponent];
-                            [weakSelf showAddRepoAlert:failedURL];
-                        }*/
+                         NSURL *failedURL = [failedURLs[0] URLByDeletingLastPathComponent];
+                         [weakSelf showAddRepoAlert:failedURL];
+                         }*/
                     }];
                     
                     [errorAlert addAction:editAction];

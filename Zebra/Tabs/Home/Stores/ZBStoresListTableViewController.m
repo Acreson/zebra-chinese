@@ -91,7 +91,7 @@
     ZBRepo *source = [self.tableData objectAtIndex:indexPath.row];
     
     cell.repoLabel.text = [source origin];
-
+    
     if (![self checkAuthenticatedRepo:[_keychain stringForKey:[source baseURL]]]) {
         cell.urlLabel.text = @"登陆";
     }
@@ -99,7 +99,7 @@
         cell.urlLabel.text = @"购买";
     }
     [cell.iconImageView sd_setImageWithURL:[source iconURL] placeholderImage:[UIImage imageNamed:@"Unknown"]];
- 
+    
     return cell;
 }
 
@@ -183,7 +183,7 @@
 
 - (void)authenticationCallBack:(NSNotification *)notif {
     [self dismissViewControllerAnimated:YES completion:nil];
-
+    
     NSURL *callbackURL = [notif.userInfo objectForKey:@"callBack"];
     NSURLComponents *urlComponents = [NSURLComponents componentsWithURL:callbackURL resolvingAgainstBaseURL:NO];
     NSArray *queryItems = urlComponents.queryItems;
